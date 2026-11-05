@@ -1,8 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// CloudStream Linux Port — Prisma schema
+// Mirrors CS3's DataStoreHelper keys (see ARCHITECTURE.md §4)
+// All CS3 key constants are preserved for backup-format compatibility.
 
 generator client {
   provider = "prisma-client-js"
@@ -13,20 +11,199 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ---------------------------------------------------------------------------
+// Core media metadata (cached from providers/TMDB)
+// ---------------------------------------------------------------------------
+model Media {
+  id           String   @id @default(cuid()) // apiName:url hash
+  apiName      String   // provider name that returned this
+  url          String   // provider-specific URL
+  type         String   // TvType enum value as string
+  name         String
+  posterUrl    String?
+  posterHeaders String? // JSON-encoded
+  year         Int?
+  plot         String?
+  score        Float?   // 0-10 normalized
+  tags         String?  // JSON-encoded string[]
+  duration     Int?     // seconds
+  comingSoon   Boolean  @default(false)
+  syncData     String?  // JSON-encoded map (TMDB/IMDB/MAL ids)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  episodes      Episode[]
+  libraryItems  LibraryItem[]
+  watchProgress WatchProgress[]
+
+  @@unique([apiName, url])
+  @@index([name])
+  @@index([type])
 }
 
-model Post {
+// ---------------------------------------------------------------------------
+// Episodes (for TvSeries / Anime)
+// ---------------------------------------------------------------------------
+model Episode {
+  id          String   @id @default(cuid())
+  mediaId     String
+  media       Media   @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  season      Int?
+  episode     Int?
+  name        String?
+  description String?
+  posterUrl   String?
+  // `data` is the opaque string passed back to provider.loadLinks
+  // (may be a URL, JSON-encoded object, or provider-specific token)
+  data        String
+  date        DateTime? // air date
+  score       Float?
+  runTime     Int?      // seconds
+
+  watchProgress WatchProgress[]
+
+  @@index([mediaId, season, episode])
+}
+
+// ---------------------------------------------------------------------------
+// Library — favorites, bookmarks, subscriptions, watch state
+// CS3 keys: result_watch_state, result_watch_state_data, result_favorites_state_data,
+//           result_subscribed_state_data
+// ---------------------------------------------------------------------------
+model LibraryItem {
+  id              String   @id @default(cuid())
+  mediaId         String
+  media           Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  // 1=watching, 2=completed, 3=on_hold, 4=dropped, 5=plan_to_watch
+  // 6=bookmarked, 7=favorite, 8=subscribed
+  kind            Int
+  // last seen episode count per dub status (CS3 SubscribedData.lastSeenEpisodeCount)
+  lastSeenEpisode String?  // JSON-encoded {dubStatus: count}
+  addedAt         DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([mediaId, kind])
+  @@index([kind])
+}
+
+// ---------------------------------------------------------------------------
+// Watch progress (resume watching)
+// CS3 keys: video_pos_dur, result_resume_watching_2
+// ---------------------------------------------------------------------------
+model WatchProgress {
+  id         String   @id @default(cuid())
+  mediaId    String
+  media      Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  episodeId  String?
+  episode    Episode? @relation(fields: [episodeId], references: [id], onDelete: SetNull)
+  position   Int      // seconds
+  duration   Int      // seconds
+  updatedAt   DateTime @updatedAt
+
+  @@unique([mediaId, episodeId])
+  @@index([mediaId])
+}
+
+// ---------------------------------------------------------------------------
+// Plugin repos (CS3 REPOSITORIES_KEY)
+// ---------------------------------------------------------------------------
+model PluginRepo {
+  id          String   @id @default(cuid())
+  url         String   @unique
+  name        String?
+  description String?
+  iconUrl     String?
+  addedAt     DateTime @default(now())
+  lastSyncedAt DateTime?
+  // raw JSON of the repo manifest (so we don't re-fetch on every page load)
+  manifestJson String?
+
+  plugins Plugin[]
+}
+
+// ---------------------------------------------------------------------------
+// Installed plugins (CS3 PLUGINS_KEY / PLUGINS_KEY_LOCAL)
+// ---------------------------------------------------------------------------
+model Plugin {
+  id           String   @id @default(cuid())
+  internalName String   @unique
+  name         String
+  description  String?
+  version      Int     @default(1)
+  apiVersion   Int     @default(1)
+  // URL we downloaded from (online) or local path (local)
+  sourceUrl    String?
+  filePath     String?
+  iconUrl      String?
+  authors      String?  // JSON-encoded string[]
+  tvTypes      String?  // JSON-encoded string[] (TvType names)
+  language     String?  // BCP-47
+  status       Int      @default(1) // 0=down, 1=ok, 2=slow, 3=beta_only
+  isOnline     Boolean  @default(true)
+  isLocal      Boolean  @default(false)
+  enabled      Boolean  @default(true)
+  // tier: "typescript" (built-in TS plugin) | "kotlin" (loaded via JVM sidecar)
+  tier         String   @default("typescript")
+  fileHash     String?  // sha256-...
+  repoId       String?
+  repo         PluginRepo? @relation(fields: [repoId], references: [id], onDelete: SetNull)
+  installedAt  DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([repoId])
+  @@index([tier])
+}
+
+// ---------------------------------------------------------------------------
+// Multi-account support (CS3 DataStoreHelper.accounts)
+// ---------------------------------------------------------------------------
+model Account {
+  id               String   @id @default(cuid())
+  keyIndex         Int      @unique
+  name             String
+  customImage      String?
+  defaultImageIndex Int      @default(0)
+  lockPin          String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Search history (CS3 quick_search_history)
+// ---------------------------------------------------------------------------
+model SearchHistory {
   id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
+  query     String
+  searchedAt DateTime @default(now())
+
+  @@index([query])
+}
+
+// ---------------------------------------------------------------------------
+// Sync provider tokens (CS3 AccountManager.ACCOUNT_TOKEN)
+// MAL / AniList / Kitsu / Simkl / Trakt / OpenSubtitles
+// ---------------------------------------------------------------------------
+model SyncToken {
+  id        String   @id @default(cuid())
+  provider  String   // "mal", "anilist", "kitsu", "simkl", "trakt", "opensubtitles"
+  accountId Int      @default(0) // CS3 currentAccount index
+  accessToken  String?
+  refreshToken String?
+  accessExpiresAt DateTime?
+  refreshExpiresAt DateTime?
+  payload   String?  // provider-specific extra JSON
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, accountId])
+}
+
+// ---------------------------------------------------------------------------
+// App settings (CS3 SharedPreferences "rebuild_preference")
+// Key-value store for any preference not modeled explicitly above.
+// ---------------------------------------------------------------------------
+model Setting {
+  key       String   @id
+  value     String   // JSON-encoded value
   updatedAt DateTime @updatedAt
 }

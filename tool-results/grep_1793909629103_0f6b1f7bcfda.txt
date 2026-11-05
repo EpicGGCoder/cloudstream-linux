@@ -1,0 +1,252 @@
+/home/z/my-project/reference/cloudstream/gradle/libs.versions.toml:44:nicehttp = "0.4.18"
+/home/z/my-project/reference/cloudstream/gradle/libs.versions.toml:136:nicehttp = { module = "com.github.Blatzar:NiceHttp", version.ref = "nicehttp" }
+/home/z/my-project/reference/cloudstream/library/build.gradle.kts:66:            implementation(libs.nicehttp) // HTTP Library
+/home/z/my-project/reference/cloudstream/library/src/jvmMain/kotlin/com/lagradost/cloudstream3/network/WebViewResolver.jvm.kt:5:import com.lagradost.nicehttp.requestCreator
+/home/z/my-project/reference/cloudstream/library/src/androidMain/kotlin/com/lagradost/cloudstream3/network/WebViewResolver.android.kt:17:import com.lagradost.nicehttp.requestCreator
+/home/z/my-project/reference/cloudstream/library/src/androidMain/kotlin/com/lagradost/cloudstream3/network/WebViewResolver.android.kt:228:                                useOkhttp && request.method == "GET" -> app.get(
+/home/z/my-project/reference/cloudstream/library/src/androidMain/kotlin/com/lagradost/cloudstream3/network/WebViewResolver.android.kt:233:                                useOkhttp && request.method == "POST" -> app.post(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/metaproviders/MyDramaList.kt:80:        val list = app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/metaproviders/MyDramaList.kt:90:        return app.post(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/metaproviders/MyDramaList.kt:131:        return app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/metaproviders/MyDramaList.kt:281:            val actors = app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/metaproviders/MyDramaList.kt:297:            return app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/metaproviders/MyDramaList.kt:304:            return app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/metaproviders/MyDramaList.kt:322:        return app.get(
+/home/z/my-project/reference/cloudstream/library/api/jvm/library.api:956:	public static final fun getApp ()Lcom/lagradost/nicehttp/Requests;
+/home/z/my-project/reference/cloudstream/library/api/jvm/library.api:957:	public static final fun getInsecureApp ()Lcom/lagradost/nicehttp/Requests;
+/home/z/my-project/reference/cloudstream/library/api/jvm/library.api:958:	public static final fun setApp (Lcom/lagradost/nicehttp/Requests;)V
+/home/z/my-project/reference/cloudstream/library/api/jvm/library.api:959:	public static final fun setInsecureApp (Lcom/lagradost/nicehttp/Requests;)V
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/metaproviders/TmdbProvider.kt:251:        return app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/metaproviders/TraktProvider.kt:284:        return app.get(
+/home/z/my-project/reference/cloudstream/app/build.gradle.kts:291:    implementation(libs.nicehttp) // HTTP Lib
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/MainAPI.kt:24:import com.lagradost.nicehttp.RequestBodyTypes
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/MainAPI.kt:195:                app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/MainAPI.kt:204:                app.get("https://www.google.com/recaptcha/api2/anchor?ar=1&hl=en&size=invisible&cb=cs3&k=$key&co=$domain&v=$vToken")
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/MainAPI.kt:208:                return app.post(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/MainAPI.kt:328:        return app.post("https://graphql.anilist.co", requestBody = data)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/ExtractorApi.kt:1391:    return app.post(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/M3u8Helper.kt:139:        val response = app.get(m3u8.streamUrl, headers = m3u8.headers, verify = false).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/M3u8Helper.kt:240:            val tsResponse = app.get(ts.url, headers = headers, verify = false)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/M3u8Helper.kt:274:            app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/M3u8Helper.kt:336:                app.get(encryptionUrl, headers = playlistStream.headers, verify = false)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/UnshortenUrl.kt:6:import com.lagradost.nicehttp.NiceResponse
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/UnshortenUrl.kt:69:        val html = app.get(url).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/UnshortenUrl.kt:115:                r = app.get(url, allowRedirects = true)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/UnshortenUrl.kt:134:            r = app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/UnshortenUrl.kt:146:                url = app.get(url, allowRedirects = true).url
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/UnshortenUrl.kt:157:        val soup = app.get(url, allowRedirects = true)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/UnshortenUrl.kt:168:        return app.get(url, allowRedirects = true).document.selectFirst("a")!!.attr("href")
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/UnshortenUrl.kt:173:        val page = app.get(url).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/utils/UnshortenUrl.kt:189:        val doc = app.get(url).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/MainActivity.kt:5:import com.lagradost.nicehttp.Requests
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/MainActivity.kt:6:import com.lagradost.nicehttp.ResponseParser
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Vidsonic.kt:12:import com.lagradost.nicehttp.NiceResponse
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Vidsonic.kt:62:        val response = app.get(url)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Embedgram.kt:22:        val document = app.get(url, referer = referer).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/ByseSX.kt:65:        return app.get(url).parsedSafe<DetailsRoot>()
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/ByseSX.kt:81:        return app.get(playbackUrl, headers = headers).parsedSafe<PlaybackRoot>()
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Hexload.kt:28:        val respData = app.get(url).text.substringAfter("data: {").substringBefore("success")
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Hexload.kt:33:        val streamResponse = app.post("$mainUrl/download", data = requestArgs)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Maxstream.kt:13:        val response = app.get(url).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/HDMomPlayerExtractor.kt:27:        val iSource = app.get(url, referer = extRef).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/DoodExtractor.kt:109:        val req = app.get(embedUrl)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/DoodExtractor.kt:113:        val trueUrl = app.get(md5, referer = req.url).text + createHashTable() + "?token=" + md5.substringAfterLast("/")
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Zplayer.kt:31:        val doc = app.get(url).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Zplayer.kt:41:                        val testurl = app.get(urlm3u8, headers = mapOf("Referer" to url)).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/GamoVideo.kt:21:        app.get(url, referer = referer).document.select("script")
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/XStreamCdn.kt:98:        app.post(newUrl, headers = headers).let { res ->
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/PeaceMakerstExtractor.kt:26:        val response = app.post(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/PeaceMakerstExtractor.kt:42:            val teve2Response = app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Mp4Upload.kt:22:        val response = app.get(realUrl)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Streamlare.kt:11:import com.lagradost.nicehttp.RequestBodyTypes
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Streamlare.kt:30:        val json = app.post(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Vidoza.kt:30:        val response = app.get(url).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/WatchSB.kt:15:        val response = app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Rabbitstream.kt:49:        val script = app.get(scriptUrl).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Rabbitstream.kt:95:        val response = app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Rabbitstream.kt:133:        val rawKeys = parseJson<List<Int>>(app.get(key).text)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/EmturbovidExtractor.kt:16:        val response = app.get(url, referer = referer ?: "$mainUrl/")
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Up4Stream.kt:31:        val redirectResponse = app.get(url, cookies = mapOf("id" to movieId))
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Up4Stream.kt:40:        val response = app.post(redirectUrl, data = redirectParams).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Tantifilm.kt:19:        val response = app.post(link).text.replace("""\""","")
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Userscloud.kt:21:        val res = app.get(url).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/HubuCloud.kt:22:        val doc = app.get(url).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Playmate.kt:28:        val resp = app.post(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/VidHidePro.kt:78:        val response = app.get(getEmbedUrl(url), referer = referer)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Wibufile.kt:22:        val res = app.get(url).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Krakenfiles.kt:23:        val doc = app.get("$mainUrl/embed-video/$id").document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Acefile.kt:22:        val script = getAndUnpack(app.get("$mainUrl/player/${id ?: return}").text)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Acefile.kt:27:        val video = app.get(serverUrl ?: return, referer = "$mainUrl/").parsedSafe<Source>()?.data
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/StreamSB.kt:155:        val mapped = app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/OdnoklassnikiExtractor.kt:41:        val videoReq = app.get(embedUrl, headers = headers).text.replace("\\&quot;", "\"").replace("\\\\", "\\")
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/GenericM3U8.kt:16:        val response = app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/InternetArchive.kt:37:                val doc = app.get(url).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Mediafire.kt:22:        val res = app.get(url, referer = referer).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Streamplay.kt:25:        val request = app.get(url, referer = referer)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Streamplay.kt:38:        app.post(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Vicloud.kt:25:        val id = Regex("\"apiQuery\":\"(.*?)\"").find(app.get(url).text)?.groupValues?.getOrNull(1)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Vicloud.kt:26:        app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/StreamSilk.kt:20:        val response = app.get(url, headers = mapOf("Accept" to "*/*"))
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Moviehab.kt:25:        val res = app.get(url)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Moviehab.kt:28:            val link = app.get("$mainUrl/${it.select("source").attr("src")}", referer = url).url
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Gofile.kt:28:        val token = app.post(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Gofile.kt:32:        val globalRes = app.get("$mainUrl/dist/js/config.js").text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Gofile.kt:39:        val parsedResponse = app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Cda.kt:24:        val doc = app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Vido.kt:17:        val methode = app.get(url.replace("/e/", "/embed-")) // fix wiflix and mesfilms
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Fastream.kt:26:            app.post(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Fastream.kt:35:            app.get(url, referer = url).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/SibNetExtractor.kt:16:        val iSource = app.get(url, referer=extRef).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/UpstreamExtractor.kt:21:        val doc = app.get(url, referer = referer).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Filesim.kt:61:        var pageResponse = app.get(embedUrl, referer = referer)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Filesim.kt:66:            pageResponse = app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Filesim.kt:93:            val interceptedUrl = app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Uqload.kt:41:        with(app.get(url)) {  // raised error ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED (3003) is due to the response: "error_nofile"
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Vtbe.kt:22:        val response = app.get(url,referer=mainUrl).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/RapidVidExtractor.kt:16:        val videoReq = app.get(url, referer=extRef).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/StreamEmbed.kt:24:        val jsonString = app.get(url, referer = mainUrl).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/LuluStream.kt:37:        val post = app.post(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/VidMoxyExtractor.kt:16:        val videoReq = app.get(url, referer=extRef).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Sendvid.kt:18:        val doc = app.get(url).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Blogger.kt:17:        with(app.get(url).document) {
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/StreamTape.kt:32:        with(app.get(url)) {
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Dailymotion.kt:40:        val response = app.get(metadataUrl, referer = embedUrl).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Mvidoo.kt:29:        val document = app.get(url, referer = referer).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/YourUpload.kt:20:        with(app.get(url).document) {
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Firestream.kt:32:        val doc = app.get(url).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Firestream.kt:34:        val videoResponse = app.post("$mainUrl/api/videos/$id/resolve", json = mapOf("blob" to token))
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Userload.kt:71:        val response = app.get(url).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Userload.kt:74:        val videoJs = app.get("$mainUrl/api/assets/userload/js/videojs.js")
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Userload.kt:79:        val videoLinkPage = app.post("$mainUrl/api/request/", data = mapOf(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Userload.kt:84:        val nameSource = app.get(url).document.head().selectFirst("title")!!.text()
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/SobreatsesuypExtractor.kt:24:        val videoReq = app.get(url, referer = extRef).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/SobreatsesuypExtractor.kt:27:        val rawList = app.post(postLink, referer = extRef).parsedSafe<List<JsonElement>>() ?: throw ErrorLoadingException("Post link not found")
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/SobreatsesuypExtractor.kt:38:            val videoData = app.post("$mainUrl/playlist/${item.file.substring(1)}.txt", referer = extRef).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/HDPlayerSystemExtractor.kt:30:        val response = app.post(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Streamhub.kt:22:        val response = app.get(url).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Jeniusplay.kt:26:        val document = app.get(url, referer = "$mainUrl/").document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Jeniusplay.kt:28:        val m3uLink = app.post(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/VkExtractor.kt:37:        val cookie = app.get(url, headers = headers, allowRedirects = false).cookies
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/VkExtractor.kt:38:        val response = app.get(url, headers = headers, allowRedirects = false, cookies = cookie).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/GUpload.kt:27:        val response = app.get(url, referer = referer).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Linkbox.kt:25:        val id = app.get("$mainUrl/api/file/share_out_list/?sortField=utime&sortAsc=0&pageNo=1&pageSize=50&shareToken=$token").parsedSafe<Responses>()?.data?.itemId
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Linkbox.kt:26:        app.get("$mainUrl/api/file/detail?itemId=$id", referer = url)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/ContentXExtractor.kt:17:        val iSource  = app.get(url, referer=extRef).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/ContentXExtractor.kt:35:        val vidSource  = app.get("${mainUrl}/source2.php?v=${iExtract}", referer=extRef).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/ContentXExtractor.kt:53:            val dublajSource  = app.get("${mainUrl}/source2.php?v=${iDublaj}", referer=extRef).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Filegram.kt:35:        val doc = app.get(getEmbedUrl(url), referer = referer).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Gdriveplayer.kt:80:        val document = app.get(url).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/HubCloud.kt:36:                val rawHref = app.get(realUrl).document.select("#download").attr("href")
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/HubCloud.kt:53:        val document = app.get(href).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/HubCloud.kt:91:                    val buzzResp = app.get("$link/download", referer = link, allowRedirects = false)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/TauVideoExtractor.kt:26:        val api = app.get(videoUrl).parsedSafe<TauVideoUrls>() ?: throw ErrorLoadingException("TauVideo")
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Vinovo.kt:31:        val resp = app.get(fixedUrl, referer = referer)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Vinovo.kt:41:        val streamInfo = app.post(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/MixDrop.kt:48:        with(app.get(url.replaceFirst("/f/", "/e/"))) {
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/PlayLtXyz.kt:21:        val doc = app.get(url, referer = referer).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/PlayLtXyz.kt:49:            val data = app.post(postUrl, headers = ajaxHead, data = ajaxData)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/MailRuExtractor.kt:25:        val videoReq = app.get("$mainUrl/+/video/meta/$vidId", referer = url)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/VideoSeyredExtractor.kt:27:        val responseRaw = app.get(videoUrl)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Flyfile.kt:26:        val videoInfo = app.get("$apiUrl/api/streaming/assign/$videoId")
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/TRsTXExtractor.kt:25:        val videoReq = app.get(url, referer = extRef).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/TRsTXExtractor.kt:28:        val rawList = app.post(postLink, referer = extRef).parsedSafe<List<JsonElement>>() ?: throw ErrorLoadingException("Post link not found")
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/TRsTXExtractor.kt:42:            val videoData = app.post(fileUrl, referer = extRef).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/JWPlayer.kt:63:        val script = app.get(url).document.selectFirst("script:containsData(sources:)") ?: return
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Voe.kt:66:        var res = app.get(url, referer = referer)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Voe.kt:69:            res = app.get(redirectUrl, referer = referer)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/CloudMailRuExtractor.kt:32:        val videoReq   = app.get(url, headers=headers).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/PlayerVoxzer.kt:16:        val urltext = app.get(listurl, referer = url).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/PlayerVoxzer.kt:25:                headers = app.get(url).headers.toMap()
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/GDMirrorbot.kt:34:            Pair(url.substringAfterLast("embed/"), getBaseUrl(app.get(url).url))
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/GDMirrorbot.kt:36:            var pageText = app.get(url).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/GDMirrorbot.kt:48:                pageText = app.get(apiUrl).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/GDMirrorbot.kt:59:        val responseText = app.post("$host/embedhelper.php", data = postData).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/helper/AsianEmbedHelper.kt:18:            val doc = app.get(url).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/helper/VstreamhubHelper.kt:23:                val doc = app.get(url).document.select("script")
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/helper/GogoHelper.kt:89:        val foundIv = iv ?: (document ?: app.get(iframeUrl).document.also { document = it })
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/helper/GogoHelper.kt:101:            val realDocument = document ?: app.get(iframeUrl).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/helper/GogoHelper.kt:109:        val jsonResponse = app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/helper/WcoHelper.kt:29:                ?: app.get("https://raw.githubusercontent.com/reduplicated/Cloudstream/master/docs/keys.json")
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/helper/WcoHelper.kt:40:                ?: app.get("https://raw.githubusercontent.com/chekaslowakiya/BruhFlow/main/keys.json")
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/SBPlay.kt:27:        val response = app.get(url, referer = referer).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/SBPlay.kt:42:                    val hrefResponse = app.get(href).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/SBPlay.kt:43:                    app.post(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/StreamoUpload.kt:22:        val response = app.get(url, referer = referer)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Supervideo.kt:21:        val response = app.get(url).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Videa.kt:36:            val response = app.get(webUrl)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Videa.kt:71:        val response = app.get(url)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Videa.kt:96:        val playerResponse = app.get(playerUrl)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/SecvideoOnline.kt:27:        val doc = app.get(url, referer = referer).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Filemoon.kt:49:        val initialResponse = app.get(url, defaultHeaders)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Filemoon.kt:75:        val iframeResponse = app.get(iframeSrcUrl, headers = iframeHeaders)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Filemoon.kt:100:            val interceptedUrl = app.get(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Hxfile.kt:48:        val document = app.get(url, allowRedirects = redirect, referer = referer).document
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Evolaod.kt:20:        val csrv_token = app.get("https://csrv.evosrv.com/captcha?m412548=").text  // whatever that is
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Evolaod.kt:21:        val captchaPass = app.get("https://cd2.evosrv.com/html/jsx/e.jsx").text.take(300).split("captcha_pass = '")[1].split("\'")[0]  //extract the captcha pass from the js response (located in the 300 first chars)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Evolaod.kt:23:        val r = app.post("https://evoload.io/SecurePlayer", data=(payload)).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Uservideo.kt:25:        val script = app.get(url).document.selectFirst("script:containsData(hosts =)")?.data()
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Uservideo.kt:29:        val sources = app.get("$host/s/$servers").text.substringAfter("\"sources\":[").substringBefore("],").let {
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Vidmoly.kt:42:        val script = app.get(newUrl, headers = headers, referer = referer)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Vidara.kt:101:        val fileInfo = app.post(
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/Vids.kt:23:        val doc = app.get(url).text
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/VidStack.kt:40:        val encoded = app.get("$baseurl/api/v1/video?id=$hash", headers = headers).text.trim()
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/GoodstreamExtractor.kt:21:        app.get(url).document.select("script").map { script ->
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/StreamWishExtractor.kt:177:        val pageResponse = app.get(resolveEmbedUrl(url), referer = referer)
+/home/z/my-project/reference/cloudstream/library/src/commonMain/kotlin/com/lagradost/cloudstream3/extractors/StreamWishExtractor.kt:198:            val interceptedStreamUrl = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/utils/InAppUpdater.kt:104:            app.get(url, headers = headers).text
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/utils/InAppUpdater.kt:159:            app.get(releaseUrl, headers = headers).text
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/utils/InAppUpdater.kt:174:        val tagResponse = parseJson<GithubTag>(app.get(tagUrl, headers = headers).text)
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/utils/InAppUpdater.kt:204:                sink.writeAll(app.get(url).body.source())
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/utils/downloader/DownloadManager.kt:814:            val request = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/utils/downloader/DownloadManager.kt:915:                val getRequest = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/utils/SyncUtil.kt:74:            val response = app.get(url, cacheTime = 1, cacheUnit = TimeUnit.DAYS).text
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/utils/SyncUtil.kt:93:        val response = app.get(url, cacheTime = 1, cacheUnit = TimeUnit.DAYS).parsed<SyncPage>()
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/utils/videoskip/AnimeSkip.kt:114:        val loginRoot = app.post(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/utils/videoskip/AnimeSkip.kt:136:        val apiRoot = app.post(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/utils/videoskip/AnimeSkip.kt:266:            app.post(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/utils/videoskip/AniSkip.kt:30:        val response = app.get(url).parsed<AniSkipResponse>()
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/utils/videoskip/TheIntroDBSkip.kt:40:        val root = app.get(url).parsed<Root>()
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/utils/videoskip/IntroDbSkip.kt:27:        val response = app.get(url).parsed<IntroDbResponse>()
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/ui/player/Torrent.kt:41:            app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/ui/player/Torrent.kt:61:            app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/ui/player/Torrent.kt:76:        return app.post(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/ui/player/Torrent.kt:92:            return app.post(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/ui/player/Torrent.kt:113:            return app.post(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/ui/player/Torrent.kt:173:        return app.post(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/ui/player/Torrent.kt:190:        return app.post(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/ui/settings/ApkUpdater.kt:45:        val request = app.get(url)
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/ui/settings/extensions/AndroidRepositoryManager.kt:81:            val parsedRepository = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/ui/settings/extensions/AndroidRepositoryManager.kt:107:                app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/ui/settings/extensions/AndroidRepositoryManager.kt:190:            app.get(convertRawGitUrl(source.pluginUrl)).body.use { body ->
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/ui/settings/GithubReleases.kt:58:        return app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/ui/settings/GithubReleases.kt:83:        val latestRelease = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/ui/search/SearchSuggestionApi.kt:6:import com.lagradost.nicehttp.NiceResponse
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/ui/search/SearchSuggestionApi.kt:43:            val response = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/SubSource.kt:34:        val searchResponse = app.post(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/SubSource.kt:48:        val apiResponse = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/SubSource.kt:94:        val data = app.get("$APIURL/subtitle/${subtitle.data}")
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/OpenSubtitlesApi.kt:81:        val response = app.post(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/OpenSubtitlesApi.kt:127:        val req = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/OpenSubtitlesApi.kt:195:        val req = app.post(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/MALApi.kt:75:        val token = app.post(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/MALApi.kt:92:        val user = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/MALApi.kt:108:        val res = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/MALApi.kt:245:        val res = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/MALApi.kt:291:        val data = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/MALApi.kt:366:        val res = app.post(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/MALApi.kt:553:        val res = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/Subdl.kt:37:        val tokenResponse = app.post(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/Subdl.kt:45:        val apiResponse = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/Subdl.kt:88:        val req = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/KitsuApi.kt:95:        val token = app.post(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/KitsuApi.kt:113:        val res = app.post(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/KitsuApi.kt:130:        val user = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/KitsuApi.kt:154:        val res = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/KitsuApi.kt:190:        val anime = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/KitsuApi.kt:231:        val anime = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/KitsuApi.kt:259:        val res = app.get(url, interceptor = apiFallbackInterceptor).parsed<KitsuResponse>()
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/KitsuApi.kt:338:        val res = app.post(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/KitsuApi.kt:386:        val res = app.get(
+/home/z/my-project/reference/cloudstream/app/src/main/java/com/lagradost/cloudstream3/syncproviders/providers/KitsuApi.kt:457:        return app.get(
+
+[Showing results with pagination = limit: 250]
