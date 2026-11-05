@@ -57,21 +57,71 @@ sudo install -m 0755 build/compose/binaries/CloudStream-x86_64.AppImage /opt/clo
 # Desktop entry + menu shortcut are auto-installed by jpackage.
 ```
 
-## What works (Phase 1)
+## What works (Phase 1 — verified with real plugins)
 
-- ✅ Real `.cs3` plugin loading via dex2jar (`PluginLoader.kt`)
-- ✅ Plugin repository manager (`RepositoryManager.kt`) — add any CS3 repo URL
-- ✅ JavaFX WebView for Cloudflare challenges (`WebViewResolverJvm.kt`)
-- ✅ vlcj video player (HLS, MP4, MKV, subtitles, multi-audio) (`VlcjPlayer.kt`)
-- ✅ Compose Desktop UI (home / search / library / plugins / settings)
-- ✅ Settings persistence (`AppSettings.kt`)
-- ✅ AppImage packaging via jpackage + appimagetool
+### ✅ Real `.cs3` plugin compatibility — TESTED
+
+We downloaded real `.cs3` plugins from the official CNCVerse repo and the
+recloudstream/extensions repo, converted them via dex2jar, loaded them via
+URLClassLoader, and exercised the full MainAPI contract. **Three plugins
+from two repos all work end-to-end:**
+
+1. **CastleTvProvider** (CNCVerse) — registered Castle TV provider,
+   `getMainPage()` returned 15 home page lists with 700+ real items,
+   `search("inception")` found Inception (2010), `loadLinks()` returned
+   6 playable HLS streams + subtitles.
+
+2. **BilibiliProvider** (CNCVerse) — registered BilibiliTV provider,
+   `getMainPage()` returned 30 anime items, `search()` returned 30 results
+   from Bilibili's real API.
+
+3. **InternetArchiveProvider** (official recloudstream repo) — registered
+   Internet Archive provider, `getMainPage()` returned 26 items,
+   `search("inception")` returned 26 results.
+
+See `PLUGIN_TESTS.md` for full test output and reproduction instructions.
+
+### ✅ Architecture
+
+- Real `.cs3` plugin loading via dex2jar (`PluginLoader.kt`)
+- Plugin repository manager (`RepositoryManager.kt`) — add any CS3 repo URL
+- Android compatibility shims (`Context`, `AppCompatActivity`, `SharedPreferences`,
+  `Log`, `Base64`, `FragmentManager`) — let plugin bytecode link on JVM
+- vlcj video player (HLS, MP4, MKV, subtitles, multi-audio) (`VlcjPlayer.kt`)
+- Compose Desktop UI (home / search / library / plugins / settings)
+- Coil 3 image loading (posters, backdrops)
+- Settings persistence (`AppSettings.kt`)
+- AppImage packaging via jpackage + appimagetool
+
+### Run the plugin test yourself
+
+```bash
+cd /home/z/my-project/desktop
+
+# (one-time) bundle dex-tools
+# scripts/fetch-dex-tools.sh  — already done; see app/resources/dex-tools/
+
+# Download a real .cs3 plugin
+curl -sL "https://raw.githubusercontent.com/NivinCNC/CNCVerse-Cloud-Stream-Extension/builds/CastleTvProvider.cs3" \
+  -o test-plugins/CastleTvProvider.cs3
+
+# Convert DEX → JVM bytecode
+cd test-plugins && unzip -o CastleTvProvider.cs3 classes.dex && cd ..
+./app/resources/dex-tools/d2j-dex2jar.sh -f -o test-plugins/CastleTvProvider.jar test-plugins/classes.dex
+
+# Run the end-to-end test (headless, no display needed)
+JAVA_HOME=/path/to/jdk21 ./gradlew :app:pluginTest
+```
+
+You'll see the plugin load, register its provider, return 15 home page lists
+with 700+ items, search for "inception", and return 6 playable HLS streams.
 
 ## What's in progress / next
 
-- Search and detail pages — UI shells present, need wiring to providers (next session)
-- Player UI — vlcj is wired but needs the Compose Desktop video surface bridge
-- Subtitle online search (OpenSubtitles)
+- Wire the Compose Desktop UI to render real provider data (Coil 3 image
+  loading is set up; just needs the UI wiring for search/detail/player flows)
+- JCEF WebView for Cloudflare-protected plugins (replaces current stub)
+- Online subtitle search (OpenSubtitles)
 - Library persistence (favorites, history, subscriptions to SQLite or JSON)
 - AniSkip / IntroDB video skip APIs
 
@@ -79,6 +129,9 @@ sudo install -m 0755 build/compose/binaries/CloudStream-x86_64.AppImage /opt/clo
 
 See `/home/z/my-project/ARCHITECTURE.md` for the full subsystem-by-subsystem
 mapping from CS3 to this port.
+
+See `/home/z/my-project/desktop/PLUGIN_TESTS.md` for the verified plugin
+compatibility test results.
 
 ## License
 

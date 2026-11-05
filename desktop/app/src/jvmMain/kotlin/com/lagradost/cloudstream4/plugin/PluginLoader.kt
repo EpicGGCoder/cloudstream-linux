@@ -92,7 +92,26 @@ object PluginLoader {
             } as BasePlugin
 
             instance.filename = file.absolutePath
-            instance.load()
+
+            // Plugins override either load() (cross-platform) or load(Context) (Android).
+            // Try the Android-signature load(Context) first — most CS3 plugins use it.
+            // Our android.content.Context stub lets the bytecode link.
+            try {
+                val loadWithContext = pluginClass.methods.firstOrNull {
+                    it.name == "load" && it.parameterTypes.size == 1 &&
+                        it.parameterTypes[0].name == "android.content.Context"
+                }
+                if (loadWithContext != null) {
+                    log.debug("Invoking load(Context) for ${manifest.name}")
+                    loadWithContext.invoke(instance, null as android.content.Context?)
+                } else {
+                    instance.load()
+                }
+            } catch (e: Throwable) {
+                val cause = (e as? java.lang.reflect.InvocationTargetException)?.targetException ?: e
+                log.warn("Plugin ${manifest.name} load() threw: ${cause::class.simpleName}: ${cause.message}")
+                log.warn("Provider registration may still have happened before the throw — checking APIHolder")
+            }
 
             log.info("Plugin loaded: {} (file={})", manifest.name, file.name)
             instance

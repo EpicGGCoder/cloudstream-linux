@@ -31,6 +31,7 @@ okhttp = "4.12.0"
 kotlinxCollectionsImmutable = "0.3.7"
 coroutinesSwing = "1.11.0"
 logback = "1.5.12"
+coilCompose = "3.3.0"
 
 [libraries]
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -61,10 +62,9 @@ okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 
 # Desktop app deps
 vlcj = { module = "uk.co.caprica:vlcj", version.ref = "vlcj" }
-# JavaFX — Linux x64 classifier (the app is Linux-only)
-javafx-web = { module = "org.openjfx:javafx-web", version.ref = "javafx" }
-javafx-swing = { module = "org.openjfx:javafx-swing", version.ref = "javafx" }
-javafx-graphics = { module = "org.openjfx:javafx-graphics", version.ref = "javafx" }
+# Coil 3 for Compose Desktop image loading (posters, backdrops)
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
+coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilCompose" }
 # Note: dex2jar is NOT a Maven artifact. It's bundled as a CLI tool in
 # app/resources/dex-tools/ (downloaded by scripts/fetch-dex-tools.sh).
 # PluginLoader.kt invokes it as a subprocess when loading .cs3 plugins.
@@ -80,4 +80,3 @@ buildkonfig = { id = "com.codingfeline.buildkonfig", version.ref = "buildkonfig"
 
 [bundles]
 cryptography = ["cryptography-core", "cryptography-jdk"]
-javafx = ["javafx-web", "javafx-swing", "javafx-graphics"]

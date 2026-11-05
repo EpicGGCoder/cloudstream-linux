@@ -37,6 +37,9 @@ kotlin {
             implementation(libs.vlcj)
             implementation(libs.okhttp)
             implementation(libs.logback)
+            // Coil 3 for image loading (posters, backdrops)
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.okhttp)
             // JavaFX WebView: deferred to Phase 2 (will use JCEF instead).
             // Phase 1 uses a stub WebViewResolver that warns when Cloudflare is hit.
             // dex2jar is bundled as a CLI tool in app/resources/dex-tools/
@@ -50,6 +53,37 @@ tasks.withType<KotlinJvmCompile> {
     compilerOptions {
         jvmTarget.set(JvmTarget.fromTarget(libs.versions.jvmTarget.get()))
     }
+}
+
+// ============================================================================
+// Plugin loader test — runs a real .cs3 through the full pipeline headlessly
+// ============================================================================
+val pluginTest by tasks.registering(JavaExec::class) {
+    group = "verification"
+    description = "Tests the .cs3 plugin loader end-to-end with a real plugin (CastleTvProvider from CNCVerse)"
+    dependsOn(":app:jvmJar", ":library:jvmJar")
+
+    val cp = sourceSets.getByName("jvmMain").runtimeClasspath
+    classpath = cp +
+        files("test-plugins/CastleTvProvider.jar") +
+        files("app/resources/dex-tools/lib/*")
+
+    mainClass.set("com.lagradost.cloudstream4.test.PluginLoaderTest")
+    args = listOf(
+        "test-plugins/CastleTvProvider.cs3",
+        "test-plugins/CastleTvProvider.jar",
+    )
+
+    jvmArgs(
+        "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+        "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
+        "--add-opens", "java.base/java.util=ALL-UNNAMED",
+        "--add-opens", "java.base/java.io=ALL-UNNAMED",
+    )
+
+    workingDir = rootProject.layout.projectDirectory.asFile
+    standardOutput = System.out
+    standardInput = System.`in`
 }
 
 // ============================================================================
