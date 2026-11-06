@@ -404,3 +404,65 @@ fun PosterSkeleton(width: Int = 160) {
         )
     }
 }
+
+/**
+ * Poster card with a progress bar at the bottom — used in "Continue Watching".
+ */
+@Composable
+fun PosterProgressCard(
+    name: String,
+    posterUrl: String?,
+    progress: Float,
+    episodeLabel: String? = null,
+) {
+    Column(
+        modifier = Modifier.width(160.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = 160.dp, height = 240.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+        ) {
+            if (posterUrl != null) {
+                coil3.compose.AsyncImage(
+                    model = posterUrl,
+                    contentDescription = name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+            // Progress bar at bottom
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progress)
+                        .height(4.dp)
+                        .background(MaterialTheme.colorScheme.primary),
+                )
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            name,
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (episodeLabel != null) {
+            Text(
+                episodeLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}

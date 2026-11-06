@@ -36,6 +36,7 @@ import androidx.compose.ui.window.application
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream4.data.AppSettings
+import com.lagradost.cloudstream4.data.DataStoreHelper
 import com.lagradost.cloudstream4.network.WebViewResolverJvm
 import com.lagradost.cloudstream4.plugin.PluginManager
 import com.lagradost.cloudstream4.repo.RepositoryManager
@@ -70,6 +71,7 @@ fun main() = application {
     log.info("CloudStream data directory: ${dataDir.absolutePath}")
 
     val settings = remember { AppSettings(dataDir) }
+    val dataStore = remember { DataStoreHelper(dataDir) }
     val pluginManager = remember { PluginManager(dataDir) }
     val repoManager = remember { RepositoryManager(pluginManager) }
 
@@ -93,7 +95,7 @@ fun main() = application {
                     contentColor = MaterialTheme.colorScheme.onBackground,
                 ) { padding ->
                     Box(Modifier.fillMaxSize().padding(padding)) {
-                        AppShell(pluginManager, repoManager, settings)
+                        AppShell(pluginManager, repoManager, settings, dataStore)
                     }
                 }
             }
@@ -137,6 +139,7 @@ private fun AppShell(
     pluginManager: PluginManager,
     repoManager: RepositoryManager,
     settings: AppSettings,
+    dataStore: DataStoreHelper,
 ) {
     var screen by remember { mutableStateOf<Screen>(Screen.TabScreen(Tab.Home)) }
 
@@ -154,14 +157,14 @@ private fun AppShell(
                     settings = settings,
                     onOpenDetail = { screen = Screen.Detail(it) },
                 )
-                Tab.Library -> LibraryScreen()
+                Tab.Library -> LibraryScreen(
+                    dataStore = dataStore,
+                    onOpenDetail = { screen = Screen.Detail(it) },
+                )
                 Tab.Plugins -> PluginsScreen(pluginManager, repoManager)
                 Tab.Settings -> SettingsScreen(settings)
             }
             else -> {
-                // While a detail/player overlay is open, show the previously
-                // active tab underneath (so the back button returns to it).
-                // The overlay covers it visually.
                 HomeScreen(
                     pluginManager = pluginManager,
                     onOpenDetail = { screen = Screen.Detail(it) },
@@ -174,6 +177,7 @@ private fun AppShell(
         when (val s = screen) {
             is Screen.Detail -> DetailScreen(
                 item = s.item,
+                dataStore = dataStore,
                 onBack = { screen = Screen.TabScreen(currentTab(screen) ?: Tab.Home) },
                 onPlay = { api, data, title ->
                     screen = Screen.Player(api, data, title)

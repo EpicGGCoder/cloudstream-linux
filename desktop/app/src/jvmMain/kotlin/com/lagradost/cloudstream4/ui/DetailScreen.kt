@@ -24,8 +24,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Public
@@ -64,6 +68,7 @@ import com.lagradost.cloudstream3.MovieLoadResponse
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.TvSeriesLoadResponse
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream4.data.DataStoreHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -83,14 +88,20 @@ private val log = LoggerFactory.getLogger("DetailScreen")
 @Composable
 fun DetailScreen(
     item: SearchResponse,
+    dataStore: DataStoreHelper,
     onBack: () -> Unit,
-    onPlay: (MainAPI, String, String) -> Unit, // (api, data, title) -> open player
+    onPlay: (MainAPI, String, String) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     var loading by remember { mutableStateOf(true) }
     var loaded by remember { mutableStateOf<LoadResponse?>(null) }
     var api by remember { mutableStateOf<MainAPI?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+
+    // Add to history when detail page opens
+    LaunchedEffect(item.url) {
+        dataStore.addToHistory(item)
+    }
 
     LaunchedEffect(item.url, item.apiName) {
         loading = true
@@ -134,6 +145,7 @@ fun DetailScreen(
                 searchItem = item,
                 loaded = loaded!!,
                 api = api!!,
+                dataStore = dataStore,
                 onBack = onBack,
                 onPlay = onPlay,
                 onOpenDetail = { /* could push another detail screen */ },
@@ -151,6 +163,7 @@ private fun DetailContent(
     searchItem: SearchResponse,
     loaded: LoadResponse,
     api: MainAPI,
+    dataStore: DataStoreHelper,
     onBack: () -> Unit,
     onPlay: (MainAPI, String, String) -> Unit,
     onOpenDetail: (SearchResponse) -> Unit,
@@ -170,6 +183,43 @@ private fun DetailContent(
                     onPlay(api, playData, playTitle)
                 },
             )
+        }
+        // Bookmark + Favorite actions
+        item(key = "actions") {
+            val isBookmarked = dataStore.isBookmarked(searchItem.url, searchItem.apiName)
+            val isFavorite = dataStore.isFavorite(searchItem.url, searchItem.apiName)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                OutlinedButton(
+                    onClick = { dataStore.toggleBookmark(searchItem) },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(
+                        if (isBookmarked) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
+                        contentDescription = "Bookmark",
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (isBookmarked) "Bookmarked" else "Bookmark")
+                }
+                OutlinedButton(
+                    onClick = { dataStore.toggleFavorite(searchItem) },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(
+                        if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        contentDescription = "Favorite",
+                        modifier = Modifier.size(18.dp),
+                        tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (isFavorite) "Favorited" else "Favorite")
+                }
+            }
         }
         loaded.plot?.let { plot ->
             item(key = "overview") {
