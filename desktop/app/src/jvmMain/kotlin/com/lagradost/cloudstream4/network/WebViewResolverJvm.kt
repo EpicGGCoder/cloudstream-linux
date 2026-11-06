@@ -1,48 +1,43 @@
 package com.lagradost.cloudstream4.network
 
-import okhttp3.Interceptor
-import okhttp3.Response
 import org.slf4j.LoggerFactory
 
 /**
- * WebView resolver — JVM implementation.
+ * WebView resolver — bridges to the CDP-based Cloudflare solver.
  *
- * Phase 1: stub. Plugins with `usesWebView = true` (mostly Cloudflare-protected
- * sites) will see their Cloudflare challenges not solved. This is a known
- * limitation; the upstream CS3 also has `WebViewResolver.jvm.kt` as `TODO`.
+ * Cloudflare-protected plugins (HDrezka, TamilDhool, NetMirror, etc.)
+ * need a real browser to solve JS challenges. We use Chrome DevTools Protocol
+ * (CDP) to drive the system's Chrome/Chromium headlessly.
  *
- * Phase 2 plan: use JCEF (Chromium Embedded Framework) — a real Chromium that
- * can solve Cloudflare JS challenges. JCEF is heavier than JavaFX WebView but
- * actually works for modern Cloudflare Turnstile.
- *
- * For now, this interceptor is a no-op pass-through.
+ * See CdpCloudflareSolver for the implementation.
  */
 object WebViewResolverJvm {
     private val log = LoggerFactory.getLogger(WebViewResolverJvm::class.java)
 
-    /** Pass-through interceptor. Phase 2 will replace this with JCEF-backed challenge solving. */
-    val interceptor: Interceptor = Interceptor { chain ->
-        val req = chain.request()
-        val resp = chain.proceed(req)
-        if (isChallenge(resp)) {
-            log.warn(
-                "Cloudflare/DdosGuard challenge detected for ${req.url} — " +
-                    "WebView resolver not yet implemented on desktop; request will fail. " +
-                    "This will be fixed in Phase 2 via JCEF."
-            )
-        }
-        resp
-    }
-
-    private fun isChallenge(resp: Response): Boolean {
-        val code = resp.code
-        if (code != 403 && code != 503) return false
-        val server = resp.header("server") ?: ""
-        return server.contains("cloudflare", ignoreCase = true) ||
-            server.contains("ddos-guard", ignoreCase = true)
-    }
-
     fun init() {
-        log.info("WebViewResolverJvm (stub) initialized — Phase 2 will add JCEF for Cloudflare")
+        log.info("WebViewResolverJvm initialized — using CDP Cloudflare solver")
+        // Check if Chrome is available
+        val hasChrome = try {
+            val candidates = listOf(
+                "/usr/bin/google-chrome", "/usr/bin/google-chrome-stable",
+                "/usr/bin/chromium", "/usr/bin/chromium-browser",
+                "/snap/bin/chromium", "/usr/bin/brave-browser",
+                System.getenv("CHROME_PATH"),
+            )
+            candidates.any { it != null && java.io.File(it).exists() }
+        } catch (e: Exception) { false }
+        if (hasChrome) {
+            log.info("Chrome/Chromium found — Cloudflare bypass is ACTIVE")
+        } else {
+            log.warn("Chrome/Chromium not found — Cloudflare-protected sites won't work. Install: sudo apt install chromium")
+        }
+
+        // Register shutdown hook to clean up Chrome
+        Runtime.getRuntime().addShutdownHook(Thread {
+            CdpCloudflareSolver.shutdown()
+        })
     }
+
+    /** The real interceptor — solves Cloudflare challenges via CDP. */
+    val interceptor = CdpCloudflareSolver.interceptor
 }

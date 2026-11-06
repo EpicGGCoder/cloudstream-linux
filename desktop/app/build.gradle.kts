@@ -35,6 +35,7 @@ kotlin {
             implementation(libs.nicehttp)
             implementation(libs.ksoup)
             implementation(libs.vlcj)
+            implementation(libs.gson)
             implementation(libs.okhttp)
             implementation(libs.logback)
             // Coil 3 for image loading (posters, backdrops)
