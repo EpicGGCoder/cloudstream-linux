@@ -3,41 +3,38 @@ package com.lagradost.cloudstream4.player
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter
 import uk.co.caprica.vlcj.player.component.EmbeddedMediaPlayerComponent
+import uk.co.caprica.vlcj.player.base.TrackDescription
 import java.awt.Component
 import javax.swing.SwingUtilities
 
 /**
- * VLCJ-based media player.
+ * VLCJ-based media player — full-featured like the original CS3 player.
  *
- * vlcj wraps libvlc — the same engine that powers VLC. On Linux, this gives us:
- *   - HLS (.m3u8) playback
- *   - Direct video (.mp4, .mkv, .webm, .avi, ...)
- *   - DASH (.mpd)
- *   - Subtitles (.srt, .vtt, embedded)
- *   - Multiple audio tracks
- *   - Hardware-accelerated decoding (VDPAU/VAAPI)
+ * Features:
+ *   - HLS (.m3u8) playback with quality variant selection
+ *   - Direct video (.mp4, .mkv, .webm, .avi)
+ *   - Multiple audio tracks (language selection)
+ *   - Subtitle tracks (provider-supplied + embedded)
+ *   - Volume, seek, playback speed
+ *   - Hardware-accelerated decoding (VAAPI/VDPAU)
  *
- * Requires libvlc installed on the system (apt install vlc / libvlc-dev).
- *
- * For DRM (Widevine/PlayReady) content: NOT supported by libvlc. Only DRM-free
- * sources will play. Most CS3 plugins serve DRM-free HLS/MP4.
+ * Requires libvlc: sudo apt install vlc libvlc-dev
  */
 class VlcjPlayer(
     private val scope: CoroutineScope,
 ) {
     private val log = LoggerFactory.getLogger(VlcjPlayer::class.java)
 
-    /** The actual vlcj media player component — creates an AWT Canvas inside. */
     private val component: EmbeddedMediaPlayerComponent = EmbeddedMediaPlayerComponent()
-
-    /** Surface to embed in Compose Desktop (via ComposePanel bridge). */
     val surface: Component get() = component
 
     private val _state = MutableStateFlow(PlayerState())
@@ -46,6 +43,12 @@ class VlcjPlayer(
     private var currentLink: ExtractorLink? = null
     private var currentSubtitles: List<SubtitleFile> = emptyList()
     private var currentSubtitleIndex: Int = -1
+
+    data class AudioTrack(
+        val id: String,
+        val description: String,
+        val index: Int,
+    )
 
     data class PlayerState(
         val isPlaying: Boolean = false,
@@ -60,12 +63,28 @@ class VlcjPlayer(
         val availableLinks: List<ExtractorLink> = emptyList(),
         val availableSubtitles: List<SubtitleFile> = emptyList(),
         val currentSubtitleLang: String? = null,
+        // Audio tracks
+        val audioTracks: List<AudioTrack> = emptyList(),
+        val currentAudioTrackIndex: Int = -1,
+        // HLS quality variants
+        val hlsVariants: List<HlsVariant> = emptyList(),
+        val currentHlsVariantIndex: Int = -1,
+    )
+
+    data class HlsVariant(
+        val index: Int,
+        val bandwidth: Long,
+        val resolution: String,
+        val height: Int,
     )
 
     init {
         component.mediaPlayer().events().addMediaPlayerEventListener(object : MediaPlayerEventAdapter() {
             override fun playing(mediaPlayer: MediaPlayer) {
                 _state.value = _state.value.copy(isPlaying = true, isLoading = false)
+                // After playback starts, fetch audio tracks and HLS variants
+                refreshAudioTracks()
+                refreshHlsVariants()
             }
 
             override fun paused(mediaPlayer: MediaPlayer) {
@@ -92,6 +111,18 @@ class VlcjPlayer(
             override fun lengthChanged(mediaPlayer: MediaPlayer, newLength: Long) {
                 _state.value = _state.value.copy(durationMs = newLength)
             }
+
+            override fun opening(mediaPlayer: MediaPlayer) {
+                _state.value = _state.value.copy(isLoading = true)
+            }
+
+            override fun mediaChanged(mediaPlayer: MediaPlayer, media: uk.co.caprica.vlcj.media.MediaRef) {
+                // Media changed — refresh tracks after a short delay
+                scope.launch {
+                    delay(1000)
+                    refreshAudioTracks()
+                }
+            }
         })
     }
 
@@ -107,12 +138,14 @@ class VlcjPlayer(
             availableSubtitles = subtitles,
             positionMs = 0,
             durationMs = 0,
+            audioTracks = emptyList(),
+            currentAudioTrackIndex = -1,
+            hlsVariants = emptyList(),
+            currentHlsVariantIndex = -1,
         )
 
         SwingUtilities.invokeLater {
             val media = component.mediaPlayer().media()
-            media.prepare(link.url)
-            // Apply headers if needed (referer etc.)
             val opts = buildList {
                 if (link.referer.isNotEmpty()) {
                     add(":http-referrer=${link.referer}")
@@ -120,10 +153,8 @@ class VlcjPlayer(
                 for ((k, v) in link.headers) {
                     add(":http-header=$k: $v")
                 }
-                if (link.quality > 0) {
-                    // No direct quality control in libvlc for HLS —
-                    // the manifest chooses the variant.
-                }
+                // Prefer hardware decoding
+                add(":avcodec-hw=vaapi")
             }
             media.play(link.url, *opts.toTypedArray())
         }
@@ -152,17 +183,122 @@ class VlcjPlayer(
         _state.value = _state.value.copy(rate = rate)
     }
 
+    // ------------------------------------------------------------------
+    // Audio track selection — like VLC's Audio > Track menu
+    // ------------------------------------------------------------------
+
     /**
-     * Select a subtitle track by index (or pass -1 to disable).
-     * For .srt/.vtt URLs, vlcj auto-detects them as we add them.
+     * Refresh the list of available audio tracks from the current media.
+     * Called automatically when playback starts.
      */
+    private fun refreshAudioTracks() {
+        try {
+            val descriptions = component.mediaPlayer().audio().trackDescriptions()
+            if (descriptions != null && descriptions.isNotEmpty()) {
+                val tracks = descriptions.mapIndexed { i, desc ->
+                    AudioTrack(
+                        id = desc?.id()?.toString() ?: i.toString(),
+                        description = desc?.description() ?: "Track ${i + 1}",
+                        index = i,
+                    )
+                }
+                val current = component.mediaPlayer().audio().track()
+                _state.value = _state.value.copy(
+                    audioTracks = tracks,
+                    currentAudioTrackIndex = current,
+                )
+                log.info("Found ${tracks.size} audio tracks: ${tracks.map { it.description }}")
+            }
+        } catch (e: Exception) {
+            log.debug("Failed to get audio tracks: ${e.message}")
+        }
+    }
+
+    /**
+     * Select an audio track by index (for language selection).
+     * This is the key feature CS3's player is missing — separate audio track selection.
+     */
+    fun selectAudioTrack(index: Int) {
+        try {
+            val tracks = _state.value.audioTracks
+            if (index in tracks.indices) {
+                component.mediaPlayer().audio().setTrack(index)
+                _state.value = _state.value.copy(currentAudioTrackIndex = index)
+                log.info("Selected audio track: ${tracks[index].description}")
+            }
+        } catch (e: Exception) {
+            log.error("Failed to select audio track $index", e)
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // HLS quality variant selection — pick resolution from m3u8
+    // ------------------------------------------------------------------
+
+    /**
+     * Refresh the list of HLS quality variants.
+     * vlcj exposes these via the TrackDescription API for video tracks.
+     */
+    private fun refreshHlsVariants() {
+        try {
+            val descriptions = component.mediaPlayer().video().trackDescriptions()
+            if (descriptions != null && descriptions.size > 1) {
+                val variants = descriptions.mapIndexed { i, desc ->
+                    val descStr = desc?.description() ?: "Variant ${i + 1}"
+                    val height = extractHeight(descStr)
+                    HlsVariant(
+                        index = i,
+                        bandwidth = 0,
+                        resolution = descStr,
+                        height = height,
+                    )
+                }
+                val current = component.mediaPlayer().video().track()
+                _state.value = _state.value.copy(
+                    hlsVariants = variants,
+                    currentHlsVariantIndex = current,
+                )
+                log.info("Found ${variants.size} HLS variants: ${variants.map { it.resolution }}")
+            }
+        } catch (e: Exception) {
+            log.debug("Failed to get HLS variants: ${e.message}")
+        }
+    }
+
+    /**
+     * Select an HLS quality variant by index.
+     * This lets the user switch between 480p, 720p, 1080p, etc.
+     */
+    fun selectHlsVariant(index: Int) {
+        try {
+            val variants = _state.value.hlsVariants
+            if (index in variants.indices) {
+                component.mediaPlayer().video().setTrack(index)
+                _state.value = _state.value.copy(currentHlsVariantIndex = index)
+                log.info("Selected HLS variant: ${variants[index].resolution}")
+            }
+        } catch (e: Exception) {
+            log.error("Failed to select HLS variant $index", e)
+        }
+    }
+
+    private fun extractHeight(desc: String): Int {
+        // Try to parse "1080p", "720p", "480p" etc.
+        Regex("(\\d{3,4})p").find(desc)?.let { return it.groupValues[1].toInt() }
+        // Try "1920x1080"
+        Regex("\\d+x(\\d+)").find(desc)?.let { return it.groupValues[1].toInt() }
+        return 0
+    }
+
+    // ------------------------------------------------------------------
+    // Subtitle selection
+    // ------------------------------------------------------------------
+
     fun selectSubtitle(index: Int) {
         val subs = currentSubtitles
         if (index in subs.indices) {
             val sub = subs[index]
-            val mp = component.mediaPlayer()
-            // Add the subtitle URL via libvlc's slave/spu mechanism.
-            mp.subpictures().setSubTitleFile(sub.url)
+            component.mediaPlayer().subpictures().setSubTitleFile(sub.url)
             currentSubtitleIndex = index
             _state.value = _state.value.copy(currentSubtitleLang = sub.lang)
         } else if (index == -1) {

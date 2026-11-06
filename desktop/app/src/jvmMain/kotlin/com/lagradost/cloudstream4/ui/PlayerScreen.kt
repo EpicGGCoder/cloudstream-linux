@@ -17,11 +17,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.AudioFile
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
@@ -281,6 +284,8 @@ fun PlayerScreen(
                             }
                         }
                     },
+                    onSelectAudioTrack = { idx -> player.selectAudioTrack(idx) },
+                    onSelectHlsVariant = { idx -> player.selectHlsVariant(idx) },
                 )
             }
 
@@ -335,9 +340,13 @@ private fun PlayerBottomBar(
     onSelectLink: (ExtractorLink) -> Unit,
     onSelectSubtitle: (Int) -> Unit,
     onSearchOnlineSubs: () -> Unit = {},
+    onSelectAudioTrack: (Int) -> Unit = {},
+    onSelectHlsVariant: (Int) -> Unit = {},
 ) {
     var sourcesOpen by remember { mutableStateOf(false) }
     var subsOpen by remember { mutableStateOf(false) }
+    var audioOpen by remember { mutableStateOf(false) }
+    var qualityOpen by remember { mutableStateOf(false) }
     Column(
         Modifier
             .fillMaxWidth()
@@ -505,6 +514,101 @@ private fun PlayerBottomBar(
                             subsOpen = false
                         },
                     )
+                }
+            }
+
+            // Audio track picker (for multi-language streams)
+            if (state.audioTracks.size > 1) {
+                Spacer(Modifier.width(8.dp))
+                Box {
+                    Row(
+                        Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White.copy(alpha = 0.1f))
+                            .clickable { audioOpen = true }
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Filled.AudioFile, contentDescription = "Audio", tint = Color.White, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = state.audioTracks.getOrNull(state.currentAudioTrackIndex)?.description ?: "Audio",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelMedium,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 80.dp),
+                        )
+                        Icon(Icons.Filled.ArrowDropDown, contentDescription = null, tint = Color.White)
+                    }
+                    DropdownMenu(
+                        expanded = audioOpen,
+                        onDismissRequest = { audioOpen = false },
+                    ) {
+                        state.audioTracks.forEach { track ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(track.description, modifier = Modifier.weight(1f))
+                                        if (track.index == state.currentAudioTrackIndex) {
+                                            Spacer(Modifier.width(8.dp))
+                                            Text("✓", color = MaterialTheme.colorScheme.primary)
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    onSelectAudioTrack(track.index)
+                                    audioOpen = false
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+
+            // HLS quality variant picker
+            if (state.hlsVariants.size > 1) {
+                Spacer(Modifier.width(8.dp))
+                Box {
+                    Row(
+                        Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White.copy(alpha = 0.1f))
+                            .clickable { qualityOpen = true }
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Filled.HighQuality, contentDescription = "Quality", tint = Color.White, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = state.hlsVariants.getOrNull(state.currentHlsVariantIndex)?.resolution ?: "Auto",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                        Icon(Icons.Filled.ArrowDropDown, contentDescription = null, tint = Color.White)
+                    }
+                    DropdownMenu(
+                        expanded = qualityOpen,
+                        onDismissRequest = { qualityOpen = false },
+                    ) {
+                        state.hlsVariants.forEach { variant ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(variant.resolution, modifier = Modifier.weight(1f))
+                                        if (variant.index == state.currentHlsVariantIndex) {
+                                            Spacer(Modifier.width(8.dp))
+                                            Text("✓", color = MaterialTheme.colorScheme.primary)
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    onSelectHlsVariant(variant.index)
+                                    qualityOpen = false
+                                },
+                            )
+                        }
+                    }
                 }
             }
         }
