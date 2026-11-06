@@ -14,6 +14,46 @@
 </p>
 
 ---
+## ⚠️ Development in Progress
+
+This project is under active development. While the core functionality works (plugin loading, playback, UI, persistence), it is **not yet a stable release**. Expect breaking changes, missing features, and bugs.
+
+### What works
+- ✅ Real `.cs3` plugin loading (97% compatibility across 106 tested plugins)
+- ✅ Video playback via vlcj (HLS, MP4, MKV)
+- ✅ Compose Desktop UI (Home, Search, Detail, Player, Library, Plugins, Settings)
+- ✅ Bookmarks, favorites, resume watching, history
+- ✅ Cloudflare bypass via Chrome DevTools Protocol
+- ✅ OpenSubtitles online subtitle search
+- ✅ AniSkip skip intro/outro API
+- ✅ Download manager (HLS + direct files)
+- ✅ Backup/restore
+
+### What's in progress
+- 🚧 AniSkip integration into player UI (API works, needs "Skip Intro" button)
+- 🚧 Download manager UI (backend works, needs download buttons on detail page)
+- 🚧 Backup/restore UI (backend works, needs export/import buttons in settings)
+- 🚧 `:shared` module (vendored but not compiled — compose.resources issues)
+- 🚧 Sync providers (MAL/AniList/Trakt) — OAuth2 flows not built yet
+
+### What's not planned
+- ❌ Chromecast (Google-only, replaced with Fcast concept)
+- ❌ TV 10-foot UI (desktop/laptop only)
+- ❌ PiP (Android-specific)
+
+### Build from source
+No prebuilt binaries yet. Build from source:
+```bash
+git clone https://github.com/EpicGGCoder/cloudstream-linux.git
+cd cloudstream-linux
+./scripts/fetch-dex-tools.sh
+JAVA_HOME=/path/to/jdk21 ./gradlew :app:packageDistributionForCurrentOS
+```
+
+See [BUILD.md](BUILD.md) for detailed instructions.
+
+
+---
 
 ## What is this?
 
