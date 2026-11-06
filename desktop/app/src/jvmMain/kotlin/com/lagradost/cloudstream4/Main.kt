@@ -187,6 +187,7 @@ private fun AppShell(
                 api = s.api,
                 data = s.data,
                 title = s.title,
+                dataStore = dataStore,
                 onClose = { screen = Screen.TabScreen(currentTab(screen) ?: Tab.Home) },
             )
             else -> Unit

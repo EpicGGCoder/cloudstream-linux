@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -56,7 +57,9 @@ import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream4.data.DataStoreHelper
 import com.lagradost.cloudstream4.player.VlcjPlayer
+import com.lagradost.cloudstream4.subtitles.OpenSubtitlesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -81,6 +84,7 @@ fun PlayerScreen(
     api: MainAPI,
     data: String,
     title: String,
+    dataStore: DataStoreHelper? = null,
     onClose: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -148,6 +152,22 @@ fun PlayerScreen(
     }
 
     val playerState by player.state.collectAsState()
+
+    // Save watch progress every 5 seconds while playing (for "Continue Watching").
+    if (dataStore != null) {
+        LaunchedEffect(playerState.positionMs, playerState.durationMs, playerState.isPlaying) {
+            if (playerState.isPlaying && playerState.durationMs > 0) {
+                dataStore.updateWatchProgress(
+                    url = data,
+                    apiName = api.name,
+                    name = title,
+                    posterUrl = null,
+                    position = playerState.positionMs,
+                    duration = playerState.durationMs,
+                )
+            }
+        }
+    }
 
     // Update loadState from vlcj events.
     LaunchedEffect(playerState.hasError) {
@@ -252,6 +272,15 @@ fun PlayerScreen(
                         currentSubtitleIndex = idx
                         player.selectSubtitle(idx)
                     },
+                    onSearchOnlineSubs = {
+                        scope.launch {
+                            val api = OpenSubtitlesApi()
+                            val results = api.search(title)
+                            if (results.isNotEmpty()) {
+                                subtitles = (subtitles + results).distinctBy { it.url }
+                            }
+                        }
+                    },
                 )
             }
 
@@ -305,6 +334,7 @@ private fun PlayerBottomBar(
     onVolume: (Float) -> Unit,
     onSelectLink: (ExtractorLink) -> Unit,
     onSelectSubtitle: (Int) -> Unit,
+    onSearchOnlineSubs: () -> Unit = {},
 ) {
     var sourcesOpen by remember { mutableStateOf(false) }
     var subsOpen by remember { mutableStateOf(false) }
@@ -456,6 +486,25 @@ private fun PlayerBottomBar(
                             },
                         )
                     }
+                    // Search OpenSubtitles online
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Filled.Search,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("Search OpenSubtitles…", color = MaterialTheme.colorScheme.primary)
+                            }
+                        },
+                        onClick = {
+                            onSearchOnlineSubs()
+                            subsOpen = false
+                        },
+                    )
                 }
             }
         }
