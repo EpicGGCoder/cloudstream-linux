@@ -3,13 +3,11 @@ package com.lagradost.cloudstream4
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.PlayArrow
@@ -29,21 +27,22 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream4.data.AppSettings
 import com.lagradost.cloudstream4.network.WebViewResolverJvm
-import com.lagradost.cloudstream4.player.VlcjPlayer
 import com.lagradost.cloudstream4.plugin.PluginManager
 import com.lagradost.cloudstream4.repo.RepositoryManager
+import com.lagradost.cloudstream4.ui.DetailScreen
 import com.lagradost.cloudstream4.ui.HomeScreen
 import com.lagradost.cloudstream4.ui.LibraryScreen
+import com.lagradost.cloudstream4.ui.PlayerScreen
 import com.lagradost.cloudstream4.ui.PluginsScreen
 import com.lagradost.cloudstream4.ui.SearchScreen
 import com.lagradost.cloudstream4.ui.SettingsScreen
@@ -67,7 +66,6 @@ private val log = LoggerFactory.getLogger("CloudStreamMain")
  *   - Persistence: JSON files under ~/.cloudstream/
  */
 fun main() = application {
-    // Resolve the user data directory: ~/.cloudstream on Linux.
     val dataDir = File(System.getProperty("user.home"), ".cloudstream").apply { mkdirs() }
     log.info("CloudStream data directory: ${dataDir.absolutePath}")
 
@@ -75,12 +73,8 @@ fun main() = application {
     val pluginManager = remember { PluginManager(dataDir) }
     val repoManager = remember { RepositoryManager(pluginManager) }
 
-    // Initialize the WebView resolver (JavaFX). Must happen on AWT thread.
     WebViewResolverJvm.init()
 
-    val scope = rememberCoroutineScope()
-
-    // Load all previously-installed plugins on startup.
     LaunchedEffect(Unit) {
         pluginManager.loadAllSavedPlugins()
     }
@@ -90,7 +84,6 @@ fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
         title = "CloudStream",
-        // icon = painterResource("icon-linux.png"),
         state = state,
     ) {
         CloudStreamTheme {
@@ -110,7 +103,6 @@ fun main() = application {
 
 @Composable
 private fun CloudStreamTheme(content: @Composable () -> Unit) {
-    // CloudStream signature deep-purple accent on near-black.
     val scheme = darkColorScheme(
         primary = Color(0xFFB388FF),
         onPrimary = Color(0xFF1A0D1F),
@@ -126,16 +118,18 @@ private fun CloudStreamTheme(content: @Composable () -> Unit) {
         onSurfaceVariant = Color(0xFFCAC4D0),
         error = Color(0xFFF2B8B5),
         onError = Color(0xFF601410),
+        errorContainer = Color(0xFF8C1D18),
+        onErrorContainer = Color(0xFFF9DEDC),
     )
     MaterialTheme(colorScheme = scheme, content = content)
 }
 
-private enum class Tab(val label: String) {
-    Home("Home"),
-    Search("Search"),
-    Library("Library"),
-    Plugins("Plugins"),
-    Settings("Settings"),
+private enum class Tab { Home, Search, Library, Plugins, Settings }
+
+private sealed class Screen {
+    data class TabScreen(val tab: Tab) : Screen()
+    data class Detail(val item: SearchResponse) : Screen()
+    data class Player(val api: MainAPI, val data: String, val title: String) : Screen()
 }
 
 @Composable
@@ -144,43 +138,88 @@ private fun AppShell(
     repoManager: RepositoryManager,
     settings: AppSettings,
 ) {
-    var activeTab by remember { mutableStateOf(Tab.Home) }
+    var screen by remember { mutableStateOf<Screen>(Screen.TabScreen(Tab.Home)) }
 
-    Column(Modifier.fillMaxSize()) {
-        Box(Modifier.weight(1f).fillMaxWidth()) {
-            when (activeTab) {
-                Tab.Home -> HomeScreen(pluginManager)
-                Tab.Search -> SearchScreen(pluginManager)
+    Box(Modifier.fillMaxSize()) {
+        // Underlying tab content (always present so state is preserved).
+        when (val s = screen) {
+            is Screen.TabScreen -> when (s.tab) {
+                Tab.Home -> HomeScreen(
+                    pluginManager = pluginManager,
+                    onOpenDetail = { screen = Screen.Detail(it) },
+                    onGoToPlugins = { screen = Screen.TabScreen(Tab.Plugins) },
+                )
+                Tab.Search -> SearchScreen(
+                    pluginManager = pluginManager,
+                    settings = settings,
+                    onOpenDetail = { screen = Screen.Detail(it) },
+                )
                 Tab.Library -> LibraryScreen()
                 Tab.Plugins -> PluginsScreen(pluginManager, repoManager)
                 Tab.Settings -> SettingsScreen(settings)
             }
+            else -> {
+                // While a detail/player overlay is open, show the previously
+                // active tab underneath (so the back button returns to it).
+                // The overlay covers it visually.
+                HomeScreen(
+                    pluginManager = pluginManager,
+                    onOpenDetail = { screen = Screen.Detail(it) },
+                    onGoToPlugins = { screen = Screen.TabScreen(Tab.Plugins) },
+                )
+            }
         }
 
-        // Bottom navigation — sticky to the bottom of the window.
-        NavigationBar(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.height(64.dp),
-        ) {
-            val tabs = listOf(
-                Triple(Tab.Home, Icons.Filled.Home, "Home"),
-                Triple(Tab.Search, Icons.Filled.Search, "Search"),
-                Triple(Tab.Library, Icons.Filled.VideoLibrary, "Library"),
-                Triple(Tab.Plugins, Icons.Filled.PlayArrow, "Plugins"),
-                Triple(Tab.Settings, Icons.Filled.Settings, "Settings"),
+        // Overlays (Detail / Player) — render on top of the tab content.
+        when (val s = screen) {
+            is Screen.Detail -> DetailScreen(
+                item = s.item,
+                onBack = { screen = Screen.TabScreen(currentTab(screen) ?: Tab.Home) },
+                onPlay = { api, data, title ->
+                    screen = Screen.Player(api, data, title)
+                },
             )
-            tabs.forEach { (tab, icon, label) ->
-                NavigationBarItem(
-                    selected = activeTab == tab,
-                    onClick = { activeTab = tab },
-                    icon = { Icon(icon, contentDescription = label, modifier = Modifier.size(22.dp)) },
-                    label = { Text(label) },
-                )
+            is Screen.Player -> PlayerScreen(
+                api = s.api,
+                data = s.data,
+                title = s.title,
+                onClose = { screen = Screen.TabScreen(currentTab(screen) ?: Tab.Home) },
+            )
+            else -> Unit
+        }
+
+        // Bottom navigation — hide when a full-screen overlay is active.
+        if (screen is Screen.TabScreen) {
+            Column(Modifier.fillMaxSize()) {
+                Box(Modifier.weight(1f).fillMaxWidth())
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.height(64.dp),
+                ) {
+                    val current = (screen as? Screen.TabScreen)?.tab ?: Tab.Home
+                    val tabs = listOf(
+                        Triple(Tab.Home, Icons.Filled.Home, "Home"),
+                        Triple(Tab.Search, Icons.Filled.Search, "Search"),
+                        Triple(Tab.Library, Icons.Filled.VideoLibrary, "Library"),
+                        Triple(Tab.Plugins, Icons.Filled.PlayArrow, "Plugins"),
+                        Triple(Tab.Settings, Icons.Filled.Settings, "Settings"),
+                    )
+                    tabs.forEach { (tab, icon, label) ->
+                        NavigationBarItem(
+                            selected = current == tab,
+                            onClick = { screen = Screen.TabScreen(tab) },
+                            icon = { Icon(icon, contentDescription = label, modifier = Modifier.size(22.dp)) },
+                            label = { Text(label) },
+                        )
+                    }
+                }
             }
         }
     }
 }
+
+private fun currentTab(screen: Screen): Tab? = (screen as? Screen.TabScreen)?.tab
 
 // Compose window state helper (avoid pulling additional imports).
 @Composable

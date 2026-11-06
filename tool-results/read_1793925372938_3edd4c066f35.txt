@@ -1,0 +1,1473 @@
+     1→package com.lagradost.cloudstream3.utils
+     2→
+     3→import com.fasterxml.jackson.annotation.JsonIgnore
+     4→import com.fleeksoft.ksoup.Ksoup
+     5→import com.lagradost.cloudstream3.AudioFile
+     6→import com.lagradost.cloudstream3.IDownloadableMinimum
+     7→import com.lagradost.cloudstream3.Prerelease
+     8→import com.lagradost.cloudstream3.SubtitleFile
+     9→import com.lagradost.cloudstream3.USER_AGENT
+    10→import com.lagradost.cloudstream3.app
+    11→import com.lagradost.cloudstream3.extractors.Acefile
+    12→import com.lagradost.cloudstream3.extractors.Ahvsh
+    13→import com.lagradost.cloudstream3.extractors.Aico
+    14→import com.lagradost.cloudstream3.extractors.Antarcticadocs
+    15→import com.lagradost.cloudstream3.extractors.Asnwish
+    16→import com.lagradost.cloudstream3.extractors.Auvexiug
+    17→import com.lagradost.cloudstream3.extractors.Awish
+    18→import com.lagradost.cloudstream3.extractors.BgwpCC
+    19→import com.lagradost.cloudstream3.extractors.BigwarpArt
+    20→import com.lagradost.cloudstream3.extractors.BigwarpIO
+    21→import com.lagradost.cloudstream3.extractors.Blogger
+    22→import com.lagradost.cloudstream3.extractors.ByseSX
+    23→import com.lagradost.cloudstream3.extractors.Bysezejataos
+    24→import com.lagradost.cloudstream3.extractors.ByseBuho
+    25→import com.lagradost.cloudstream3.extractors.ByseVepoin
+    26→import com.lagradost.cloudstream3.extractors.ByseQekaho
+    27→import com.lagradost.cloudstream3.extractors.Cavanhabg
+    28→import com.lagradost.cloudstream3.extractors.Cda
+    29→import com.lagradost.cloudstream3.extractors.Cdnplayer
+    30→import com.lagradost.cloudstream3.extractors.CdnwishCom
+    31→import com.lagradost.cloudstream3.extractors.CloudMailRu
+    32→import com.lagradost.cloudstream3.extractors.ContentX
+    33→import com.lagradost.cloudstream3.extractors.CsstOnline
+    34→import com.lagradost.cloudstream3.extractors.D0000d
+    35→import com.lagradost.cloudstream3.extractors.D000dCom
+    36→import com.lagradost.cloudstream3.extractors.DBfilm
+    37→import com.lagradost.cloudstream3.extractors.Dailymotion
+    38→import com.lagradost.cloudstream3.extractors.DatabaseGdrive
+    39→import com.lagradost.cloudstream3.extractors.DatabaseGdrive2
+    40→import com.lagradost.cloudstream3.extractors.DesuArcg
+    41→import com.lagradost.cloudstream3.extractors.DesuDrive
+    42→import com.lagradost.cloudstream3.extractors.DesuOdchan
+    43→import com.lagradost.cloudstream3.extractors.DesuOdvip
+    44→import com.lagradost.cloudstream3.extractors.Dhcplay
+    45→import com.lagradost.cloudstream3.extractors.Dhtpre
+    46→import com.lagradost.cloudstream3.extractors.Dokicloud
+    47→import com.lagradost.cloudstream3.extractors.DoodCxExtractor
+    48→import com.lagradost.cloudstream3.extractors.DoodLaExtractor
+    49→import com.lagradost.cloudstream3.extractors.DoodPmExtractor
+    50→import com.lagradost.cloudstream3.extractors.DoodShExtractor
+    51→import com.lagradost.cloudstream3.extractors.DoodSoExtractor
+    52→import com.lagradost.cloudstream3.extractors.DoodToExtractor
+    53→import com.lagradost.cloudstream3.extractors.DoodWatchExtractor
+    54→import com.lagradost.cloudstream3.extractors.DoodWfExtractor
+    55→import com.lagradost.cloudstream3.extractors.DoodWsExtractor
+    56→import com.lagradost.cloudstream3.extractors.DoodYtExtractor
+    57→import com.lagradost.cloudstream3.extractors.Doodspro
+    58→import com.lagradost.cloudstream3.extractors.Dsvplay
+    59→import com.lagradost.cloudstream3.extractors.Doodporn
+    60→import com.lagradost.cloudstream3.extractors.DoodstreamCom
+    61→import com.lagradost.cloudstream3.extractors.Dooood
+    62→import com.lagradost.cloudstream3.extractors.Ds2play
+    63→import com.lagradost.cloudstream3.extractors.Ds2video
+    64→import com.lagradost.cloudstream3.extractors.DsstOnline
+    65→import com.lagradost.cloudstream3.extractors.Dumbalag
+    66→import com.lagradost.cloudstream3.extractors.Dwish
+    67→import com.lagradost.cloudstream3.extractors.Embedgram
+    68→import com.lagradost.cloudstream3.extractors.EmturbovidExtractor
+    69→import com.lagradost.cloudstream3.extractors.Evoload
+    70→import com.lagradost.cloudstream3.extractors.Evoload1
+    71→import com.lagradost.cloudstream3.extractors.Ewish
+    72→import com.lagradost.cloudstream3.extractors.FEmbed
+    73→import com.lagradost.cloudstream3.extractors.FEnet
+    74→import com.lagradost.cloudstream3.extractors.Fastream
+    75→import com.lagradost.cloudstream3.extractors.FeHD
+    76→import com.lagradost.cloudstream3.extractors.Fembed9hd
+    77→import com.lagradost.cloudstream3.extractors.FileMoon
+    78→import com.lagradost.cloudstream3.extractors.FileMoonIn
+    79→import com.lagradost.cloudstream3.extractors.FileMoonSx
+    80→import com.lagradost.cloudstream3.extractors.FilemoonV2
+    81→import com.lagradost.cloudstream3.extractors.Filesim
+    82→import com.lagradost.cloudstream3.extractors.Firestream
+    83→import com.lagradost.cloudstream3.extractors.FirestreamSite
+    84→import com.lagradost.cloudstream3.extractors.Multimoviesshg
+    85→import com.lagradost.cloudstream3.extractors.FlaswishCom
+    86→import com.lagradost.cloudstream3.extractors.Flyfile
+    87→import com.lagradost.cloudstream3.extractors.FourCX
+    88→import com.lagradost.cloudstream3.extractors.FourPichive
+    89→import com.lagradost.cloudstream3.extractors.FourPlayRu
+    90→import com.lagradost.cloudstream3.extractors.Fplayer
+    91→import com.lagradost.cloudstream3.extractors.FsstOnline
+    92→import com.lagradost.cloudstream3.extractors.GDMirrorbot
+    93→import com.lagradost.cloudstream3.extractors.GUpload
+    94→import com.lagradost.cloudstream3.extractors.GamoVideo
+    95→import com.lagradost.cloudstream3.extractors.Gdriveplayer
+    96→import com.lagradost.cloudstream3.extractors.Gdriveplayerapi
+    97→import com.lagradost.cloudstream3.extractors.Gdriveplayerapp
+    98→import com.lagradost.cloudstream3.extractors.Gdriveplayerbiz
+    99→import com.lagradost.cloudstream3.extractors.Gdriveplayerco
+   100→import com.lagradost.cloudstream3.extractors.Gdriveplayerfun
+   101→import com.lagradost.cloudstream3.extractors.Gdriveplayerio
+   102→import com.lagradost.cloudstream3.extractors.Gdriveplayerme
+   103→import com.lagradost.cloudstream3.extractors.Gdriveplayerorg
+   104→import com.lagradost.cloudstream3.extractors.Gdriveplayerus
+   105→import com.lagradost.cloudstream3.extractors.Geodailymotion
+   106→import com.lagradost.cloudstream3.extractors.Gofile
+   107→import com.lagradost.cloudstream3.extractors.GoodstreamExtractor
+   108→import com.lagradost.cloudstream3.extractors.Guccihide
+   109→import com.lagradost.cloudstream3.extractors.Guxhag
+   110→import com.lagradost.cloudstream3.extractors.HDMomPlayer
+   111→import com.lagradost.cloudstream3.extractors.HDPlayerSystem
+   112→import com.lagradost.cloudstream3.extractors.HDStreamAble
+   113→import com.lagradost.cloudstream3.extractors.Habetar
+   114→import com.lagradost.cloudstream3.extractors.Handfacesnap
+   115→import com.lagradost.cloudstream3.extractors.Haxloppd
+   116→import com.lagradost.cloudstream3.extractors.Hexload
+   117→import com.lagradost.cloudstream3.extractors.Hgcloudto
+   118→import com.lagradost.cloudstream3.extractors.HglinkTo
+   119→import com.lagradost.cloudstream3.extractors.HgplayCDN
+   120→import com.lagradost.cloudstream3.extractors.Hotlinger
+   121→import com.lagradost.cloudstream3.extractors.HubCloud
+   122→import com.lagradost.cloudstream3.extractors.Hxfile
+   123→import com.lagradost.cloudstream3.extractors.HlsWish
+   124→import com.lagradost.cloudstream3.extractors.HubuCloud
+   125→import com.lagradost.cloudstream3.extractors.InternetArchive
+   126→import com.lagradost.cloudstream3.extractors.JWPlayer
+   127→import com.lagradost.cloudstream3.extractors.Jeniusplay
+   128→import com.lagradost.cloudstream3.extractors.Jodwish
+   129→import com.lagradost.cloudstream3.extractors.Keephealth
+   130→import com.lagradost.cloudstream3.extractors.KotakAnimeid
+   131→import com.lagradost.cloudstream3.extractors.Kotakajair
+   132→import com.lagradost.cloudstream3.extractors.Krakenfiles
+   133→import com.lagradost.cloudstream3.extractors.Kswplayer
+   134→import com.lagradost.cloudstream3.extractors.LayarKaca
+   135→import com.lagradost.cloudstream3.extractors.Linkbox
+   136→import com.lagradost.cloudstream3.extractors.LuluStream
+   137→import com.lagradost.cloudstream3.extractors.Lulustream1
+   138→import com.lagradost.cloudstream3.extractors.Lulustream2
+   139→import com.lagradost.cloudstream3.extractors.Luluvdoo
+   140→import com.lagradost.cloudstream3.extractors.Luxubu
+   141→import com.lagradost.cloudstream3.extractors.Lvturbo
+   142→import com.lagradost.cloudstream3.extractors.MailRu
+   143→import com.lagradost.cloudstream3.extractors.Maxstream
+   144→import com.lagradost.cloudstream3.extractors.Mediafire
+   145→import com.lagradost.cloudstream3.extractors.Megacloud
+   146→import com.lagradost.cloudstream3.extractors.Meownime
+   147→import com.lagradost.cloudstream3.extractors.MetaGnathTuggers
+   148→import com.lagradost.cloudstream3.extractors.MixDrop
+   149→import com.lagradost.cloudstream3.extractors.MixDropAg
+   150→import com.lagradost.cloudstream3.extractors.MixDropBz
+   151→import com.lagradost.cloudstream3.extractors.MixDropCh
+   152→import com.lagradost.cloudstream3.extractors.MixDropTo
+   153→import com.lagradost.cloudstream3.extractors.MixDropPs
+   154→import com.lagradost.cloudstream3.extractors.Mdy
+   155→import com.lagradost.cloudstream3.extractors.MixDropSi
+   156→import com.lagradost.cloudstream3.extractors.MxDropTo
+   157→import com.lagradost.cloudstream3.extractors.Movhide
+   158→import com.lagradost.cloudstream3.extractors.Moviehab
+   159→import com.lagradost.cloudstream3.extractors.MoviehabNet
+   160→import com.lagradost.cloudstream3.extractors.Moviesm4u
+   161→import com.lagradost.cloudstream3.extractors.Mp4Upload
+   162→import com.lagradost.cloudstream3.extractors.Multimovies
+   163→import com.lagradost.cloudstream3.extractors.Mvidoo
+   164→import com.lagradost.cloudstream3.extractors.MyVidPlay
+   165→import com.lagradost.cloudstream3.extractors.Mwish
+   166→import com.lagradost.cloudstream3.extractors.Namefacesnap
+   167→import com.lagradost.cloudstream3.extractors.Nameitweb
+   168→import com.lagradost.cloudstream3.extractors.NathanFromSubject
+   169→import com.lagradost.cloudstream3.extractors.Nekostream
+   170→import com.lagradost.cloudstream3.extractors.Nekowish
+   171→import com.lagradost.cloudstream3.extractors.Neonime7n
+   172→import com.lagradost.cloudstream3.extractors.Neonime8n
+   173→import com.lagradost.cloudstream3.extractors.Obeywish
+   174→import com.lagradost.cloudstream3.extractors.Odnoklassniki
+   175→import com.lagradost.cloudstream3.extractors.Odysseusa
+   176→import com.lagradost.cloudstream3.extractors.OkRuHTTP
+   177→import com.lagradost.cloudstream3.extractors.OkRuHTTPMobile
+   178→import com.lagradost.cloudstream3.extractors.OkRuSSL
+   179→import com.lagradost.cloudstream3.extractors.OkRuSSLMobile
+   180→import com.lagradost.cloudstream3.extractors.PeaceMakerst
+   181→import com.lagradost.cloudstream3.extractors.Peytonepre
+   182→import com.lagradost.cloudstream3.extractors.Pichive
+   183→import com.lagradost.cloudstream3.extractors.PixelDrain
+   184→import com.lagradost.cloudstream3.extractors.PixelDrainDev
+   185→import com.lagradost.cloudstream3.extractors.PlayLtXyz
+   186→import com.lagradost.cloudstream3.extractors.PlayRu
+   187→import com.lagradost.cloudstream3.extractors.PlayerVoxzer
+   188→import com.lagradost.cloudstream3.extractors.Playerwish
+   189→import com.lagradost.cloudstream3.extractors.Playmate
+   190→import com.lagradost.cloudstream3.extractors.Playmogo
+   191→import com.lagradost.cloudstream3.extractors.Rabbitstream
+   192→import com.lagradost.cloudstream3.extractors.RapidVid
+   193→import com.lagradost.cloudstream3.extractors.Rasacintaku
+   194→import com.lagradost.cloudstream3.extractors.SBfull
+   195→import com.lagradost.cloudstream3.extractors.Sbasian
+   196→import com.lagradost.cloudstream3.extractors.Sbface
+   197→import com.lagradost.cloudstream3.extractors.Sbflix
+   198→import com.lagradost.cloudstream3.extractors.Sblona
+   199→import com.lagradost.cloudstream3.extractors.Sblongvu
+   200→import com.lagradost.cloudstream3.extractors.Sbnet
+   201→import com.lagradost.cloudstream3.extractors.Sbrapid
+   202→import com.lagradost.cloudstream3.extractors.Sbsonic
+   203→import com.lagradost.cloudstream3.extractors.Sbspeed
+   204→import com.lagradost.cloudstream3.extractors.Sbthe
+   205→import com.lagradost.cloudstream3.extractors.SecvideoOnline
+   206→import com.lagradost.cloudstream3.extractors.Sendvid
+   207→import com.lagradost.cloudstream3.extractors.Server1uns
+   208→import com.lagradost.cloudstream3.extractors.SfastwishCom
+   209→import com.lagradost.cloudstream3.extractors.ShaveTape
+   210→import com.lagradost.cloudstream3.extractors.SibNet
+   211→import com.lagradost.cloudstream3.extractors.Simpulumlamerop
+   212→import com.lagradost.cloudstream3.extractors.Smoothpre
+   213→import com.lagradost.cloudstream3.extractors.Sobreatsesuyp
+   214→import com.lagradost.cloudstream3.extractors.Ssbstream
+   215→import com.lagradost.cloudstream3.extractors.StreamEmbed
+   216→import com.lagradost.cloudstream3.extractors.StreamHLS
+   217→import com.lagradost.cloudstream3.extractors.StreamM4u
+   218→import com.lagradost.cloudstream3.extractors.StreamSB
+   219→import com.lagradost.cloudstream3.extractors.StreamSB1
+   220→import com.lagradost.cloudstream3.extractors.StreamSB10
+   221→import com.lagradost.cloudstream3.extractors.StreamSB11
+   222→import com.lagradost.cloudstream3.extractors.StreamSB2
+   223→import com.lagradost.cloudstream3.extractors.StreamSB3
+   224→import com.lagradost.cloudstream3.extractors.StreamSB4
+   225→import com.lagradost.cloudstream3.extractors.StreamSB5
+   226→import com.lagradost.cloudstream3.extractors.StreamSB6
+   227→import com.lagradost.cloudstream3.extractors.StreamSB7
+   228→import com.lagradost.cloudstream3.extractors.StreamSB8
+   229→import com.lagradost.cloudstream3.extractors.StreamSB9
+   230→import com.lagradost.cloudstream3.extractors.StreamSilk
+   231→import com.lagradost.cloudstream3.extractors.StreamTape
+   232→import com.lagradost.cloudstream3.extractors.StreamTapeNet
+   233→import com.lagradost.cloudstream3.extractors.StreamTapeXyz
+   234→import com.lagradost.cloudstream3.extractors.Watchadsontape
+   235→import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+   236→import com.lagradost.cloudstream3.extractors.StreamhideCom
+   237→import com.lagradost.cloudstream3.extractors.StreamhideTo
+   238→import com.lagradost.cloudstream3.extractors.Streamhub2
+   239→import com.lagradost.cloudstream3.extractors.Streamlare
+   240→import com.lagradost.cloudstream3.extractors.StreamoUpload
+   241→import com.lagradost.cloudstream3.extractors.Streamplay
+   242→import com.lagradost.cloudstream3.extractors.Streamsss
+   243→import com.lagradost.cloudstream3.extractors.Streamwish2
+   244→import com.lagradost.cloudstream3.extractors.Strwish
+   245→import com.lagradost.cloudstream3.extractors.Strwish2
+   246→import com.lagradost.cloudstream3.extractors.Supervideo
+   247→import com.lagradost.cloudstream3.extractors.Swdyu
+   248→import com.lagradost.cloudstream3.extractors.Swhoi
+   249→import com.lagradost.cloudstream3.extractors.TRsTX
+   250→import com.lagradost.cloudstream3.extractors.Tantifilm
+   251→import com.lagradost.cloudstream3.extractors.TauVideo
+   252→import com.lagradost.cloudstream3.extractors.Techinmind
+   253→import com.lagradost.cloudstream3.extractors.Tubeless
+   254→import com.lagradost.cloudstream3.extractors.Uasopt
+   255→import com.lagradost.cloudstream3.extractors.Up4FunTop
+   256→import com.lagradost.cloudstream3.extractors.Up4Stream
+   257→import com.lagradost.cloudstream3.extractors.Upstream
+   258→import com.lagradost.cloudstream3.extractors.UpstreamExtractor
+   259→import com.lagradost.cloudstream3.extractors.Uqload
+   260→import com.lagradost.cloudstream3.extractors.Uqload1
+   261→import com.lagradost.cloudstream3.extractors.Uqload2
+   262→import com.lagradost.cloudstream3.extractors.Uqloadcx
+   263→import com.lagradost.cloudstream3.extractors.Uqloadbz
+   264→import com.lagradost.cloudstream3.extractors.UqloadsXyz
+   265→import com.lagradost.cloudstream3.extractors.Urochsunloath
+   266→import com.lagradost.cloudstream3.extractors.Userload
+   267→import com.lagradost.cloudstream3.extractors.Userscloud
+   268→import com.lagradost.cloudstream3.extractors.Uservideo
+   269→import com.lagradost.cloudstream3.extractors.Videa
+   270→import com.lagradost.cloudstream3.extractors.Vicloud
+   271→import com.lagradost.cloudstream3.extractors.VidHidePro
+   272→import com.lagradost.cloudstream3.extractors.VidHidePro1
+   273→import com.lagradost.cloudstream3.extractors.VidHidePro2
+   274→import com.lagradost.cloudstream3.extractors.VidHidePro3
+   275→import com.lagradost.cloudstream3.extractors.VidHidePro4
+   276→import com.lagradost.cloudstream3.extractors.VidHidePro5
+   277→import com.lagradost.cloudstream3.extractors.VidHidePro6
+   278→import com.lagradost.cloudstream3.extractors.VidHideHub
+   279→import com.lagradost.cloudstream3.extractors.Ryderjet
+   280→import com.lagradost.cloudstream3.extractors.Streamcash
+   281→import com.lagradost.cloudstream3.extractors.Thebesthostertv
+   282→import com.lagradost.cloudstream3.extractors.VidChampions
+   283→import com.lagradost.cloudstream3.extractors.VidMoxy
+   284→import com.lagradost.cloudstream3.extractors.VidStack
+   285→import com.lagradost.cloudstream3.extractors.VideoSeyred
+   286→import com.lagradost.cloudstream3.extractors.Videzz
+   287→import com.lagradost.cloudstream3.extractors.Vidgomunime
+   288→import com.lagradost.cloudstream3.extractors.Vidgomunimesb
+   289→import com.lagradost.cloudstream3.extractors.VidhideExtractor
+   290→import com.lagradost.cloudstream3.extractors.Vidmoly
+   291→import com.lagradost.cloudstream3.extractors.Vidmolyme
+   292→import com.lagradost.cloudstream3.extractors.Vidmolyto
+   293→import com.lagradost.cloudstream3.extractors.Vidmolybiz
+   294→import com.lagradost.cloudstream3.extractors.Vido
+   295→import com.lagradost.cloudstream3.extractors.Vidoza
+   296→import com.lagradost.cloudstream3.extractors.VinovoSi
+   297→import com.lagradost.cloudstream3.extractors.VinovoTo
+   298→import com.lagradost.cloudstream3.extractors.VidNest
+   299→import com.lagradost.cloudstream3.extractors.VidaaraxCom
+   300→import com.lagradost.cloudstream3.extractors.VidaaraxNet
+   301→import com.lagradost.cloudstream3.extractors.Vidara
+   302→import com.lagradost.cloudstream3.extractors.VidaraSo
+   303→import com.lagradost.cloudstream3.extractors.Vidaraa
+   304→import com.lagradost.cloudstream3.extractors.Vidaratem
+   305→import com.lagradost.cloudstream3.extractors.Vidaraw
+   306→import com.lagradost.cloudstream3.extractors.Vidarax
+   307→import com.lagradost.cloudstream3.extractors.Vidavaca
+   308→import com.lagradost.cloudstream3.extractors.Vide0Net
+   309→import com.lagradost.cloudstream3.extractors.Vidmatrixa
+   310→import com.lagradost.cloudstream3.extractors.Vids
+   311→import com.lagradost.cloudstream3.extractors.Vidsonic
+   312→import com.lagradost.cloudstream3.extractors.Vixeo
+   313→import com.lagradost.cloudstream3.extractors.VkExtractor
+   314→import com.lagradost.cloudstream3.extractors.Voe
+   315→import com.lagradost.cloudstream3.extractors.Voe1
+   316→import com.lagradost.cloudstream3.extractors.Voe2
+   317→import com.lagradost.cloudstream3.extractors.Vtbe
+   318→import com.lagradost.cloudstream3.extractors.Wibufile
+   319→import com.lagradost.cloudstream3.extractors.WishembedPro
+   320→import com.lagradost.cloudstream3.extractors.Wishfast
+   321→import com.lagradost.cloudstream3.extractors.Wishonly
+   322→import com.lagradost.cloudstream3.extractors.XStreamCdn
+   323→import com.lagradost.cloudstream3.extractors.Xenolyzb
+   324→import com.lagradost.cloudstream3.extractors.Yipsu
+   325→import com.lagradost.cloudstream3.extractors.YourUpload
+   326→import com.lagradost.cloudstream3.extractors.YoutubeExtractor
+   327→import com.lagradost.cloudstream3.extractors.YoutubeMobileExtractor
+   328→import com.lagradost.cloudstream3.extractors.YoutubeNoCookieExtractor
+   329→import com.lagradost.cloudstream3.extractors.YoutubeShortLinkExtractor
+   330→import com.lagradost.cloudstream3.extractors.Yufiles
+   331→import com.lagradost.cloudstream3.extractors.Yuguaab
+   332→import com.lagradost.cloudstream3.extractors.Zplayer
+   333→import com.lagradost.cloudstream3.extractors.ZplayerV2
+   334→import com.lagradost.cloudstream3.extractors.Ztreamhub
+   335→import com.lagradost.cloudstream3.mvvm.logError
+   336→import com.lagradost.cloudstream3.utils.Coroutines.atomicListOf
+   337→import io.ktor.http.Url
+   338→import io.ktor.http.decodeURLPart
+   339→import kotlinx.coroutines.coroutineScope
+   340→import kotlinx.coroutines.delay
+   341→import kotlinx.coroutines.ensureActive
+   342→import kotlinx.serialization.SerialName
+   343→import kotlinx.serialization.Serializable
+   344→import kotlinx.serialization.Transient
+   345→import kotlin.coroutines.cancellation.CancellationException
+   346→import kotlin.uuid.Uuid
+   347→import kotlin.uuid.toJavaUuid
+   348→import kotlin.uuid.toKotlinUuid
+   349→
+   350→/**
+   351→ * For use in the ConcatenatingMediaSource.
+   352→ * If features are missing (headers), please report and we can add it.
+   353→ * @param durationUs use Long.toUs() for easier input
+   354→ * */
+   355→data class PlayListItem(
+   356→    val url: String,
+   357→    val durationUs: Long,
+   358→)
+   359→
+   360→/**
+   361→ * Converts Seconds to MicroSeconds, multiplication by 1_000_000
+   362→ * */
+   363→fun Long.toUs(): Long {
+   364→    return this * 1_000_000
+   365→}
+   366→
+   367→/**
+   368→ * If your site has an unorthodox m3u8-like system where there are multiple smaller videos concatenated
+   369→ * use this.
+   370→ * */
+   371→@Suppress("DEPRECATION")
+   372→data class ExtractorLinkPlayList(
+   373→    override val source: String,
+   374→    override val name: String,
+   375→    val playlist: List<PlayListItem>,
+   376→    override var referer: String,
+   377→    override var quality: Int,
+   378→    override var headers: Map<String, String> = mapOf(),
+   379→    /** Used for getExtractorVerifierJob() */
+   380→    override var extractorData: String? = null,
+   381→    override var type: ExtractorLinkType,
+   382→    override var audioTracks: List<AudioFile> = emptyList(),
+   383→) : ExtractorLink(
+   384→    source = source,
+   385→    name = name,
+   386→    url = "",
+   387→    referer = referer,
+   388→    quality = quality,
+   389→    headers = headers,
+   390→    extractorData = extractorData,
+   391→    type = type,
+   392→    audioTracks = audioTracks
+   393→) {
+   394→    constructor(
+   395→        source: String,
+   396→        name: String,
+   397→        playlist: List<PlayListItem>,
+   398→        referer: String,
+   399→        quality: Int,
+   400→        isM3u8: Boolean = false,
+   401→        headers: Map<String, String> = mapOf(),
+   402→        extractorData: String? = null,
+   403→    ) : this(
+   404→        source = source,
+   405→        name = name,
+   406→        playlist = playlist,
+   407→        referer = referer,
+   408→        quality = quality,
+   409→        type = if (isM3u8) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO,
+   410→        headers = headers,
+   411→        extractorData = extractorData,
+   412→    )
+   413→}
+   414→
+   415→/** Metadata about the file type used for downloads and exoplayer hint,
+   416→ * if you respond with the wrong one the file will fail to download or be played */
+   417→enum class ExtractorLinkType {
+   418→    /** Single stream of bytes no matter the actual file type */
+   419→    VIDEO,
+   420→
+   421→    /** Split into several .ts files, has support for encrypted m3u8s */
+   422→    M3U8,
+   423→
+   424→    /** Like m3u8 but uses xml, currently no download support */
+   425→    DASH,
+   426→
+   427→    /** No support at the moment */
+   428→    TORRENT,
+   429→
+   430→    /** No support at the moment */
+   431→    MAGNET;
+   432→
+   433→    // See https://www.iana.org/assignments/media-types/media-types.xhtml
+   434→    @JsonIgnore
+   435→    fun getMimeType(): String {
+   436→        return when (this) {
+   437→            VIDEO -> "video/mp4"
+   438→            M3U8 -> "application/x-mpegURL"
+   439→            DASH -> "application/dash+xml"
+   440→            TORRENT -> "application/x-bittorrent"
+   441→            MAGNET -> "application/x-bittorrent"
+   442→        }
+   443→    }
+   444→}
+   445→
+   446→private fun inferTypeFromUrl(url: String): ExtractorLinkType {
+   447→    val path = try {
+   448→        Url(url).encodedPath.decodeURLPart()
+   449→    } catch (_: Throwable) {
+   450→        // don't log magnet links as errors
+   451→        null
+   452→    }
+   453→    return when {
+   454→        path?.endsWith(".m3u8") == true -> ExtractorLinkType.M3U8
+   455→        path?.endsWith(".mpd") == true -> ExtractorLinkType.DASH
+   456→        path?.endsWith(".torrent") == true -> ExtractorLinkType.TORRENT
+   457→        url.startsWith("magnet:") -> ExtractorLinkType.MAGNET
+   458→        else -> ExtractorLinkType.VIDEO
+   459→    }
+   460→}
+   461→
+   462→val INFER_TYPE: ExtractorLinkType? = null
+   463→
+   464→/**
+   465→ * [Uuid] for the ClearKey DRM scheme.
+   466→ *
+   467→ *
+   468→ * ClearKey is supported on Android devices running Android 5.0 (API Level 21) and up.
+   469→ */
+   470→@Prerelease
+   471→val CLEARKEY_DRM_UUID = Uuid.fromLongs(-0x1d8e62a7567a4c37L, 0x781AB030AF78D30EL)
+   472→
+   473→/**
+   474→ * [Uuid] for the Widevine DRM scheme.
+   475→ *
+   476→ *
+   477→ * Widevine is supported on Android devices running Android 4.3 (API Level 18) and up.
+   478→ */
+   479→@Prerelease
+   480→val WIDEVINE_DRM_UUID = Uuid.fromLongs(-0x121074568629b532L, -0x5c37d8232ae2de13L)
+   481→
+   482→/**
+   483→ * [Uuid] for the PlayReady DRM scheme.
+   484→ *
+   485→ *
+   486→ * PlayReady is supported on all AndroidTV devices. Note that most other Android devices do not
+   487→ * provide PlayReady support.
+   488→ */
+   489→@Prerelease
+   490→val PLAYREADY_DRM_UUID = Uuid.fromLongs(-0x65fb0f8667bfbd7aL, -0x546d19a41f77a06bL)
+   491→
+   492→// Deprecate after next stable
+   493→
+   494→// @Deprecated("Use CLEARKEY_DRM_UUID", ReplaceWith("CLEARKEY_DRM_UUID"), level = DeprecationLevel.WARNING)
+   495→val CLEARKEY_UUID = CLEARKEY_DRM_UUID.toJavaUuid()
+   496→
+   497→// @Deprecated("Use WIDEVINE_DRM_UUID", ReplaceWith("WIDEVINE_DRM_UUID"), level = DeprecationLevel.WARNING)
+   498→val WIDEVINE_UUID = WIDEVINE_DRM_UUID.toJavaUuid()
+   499→
+   500→// @Deprecated("Use PLAYREADY_DRM_UUID", ReplaceWith("PLAYREADY_DRM_UUID"), level = DeprecationLevel.WARNING)
+   501→val PLAYREADY_UUID = PLAYREADY_DRM_UUID.toJavaUuid()
+   502→
+   503→suspend fun newExtractorLink(
+   504→    source: String,
+   505→    name: String,
+   506→    url: String,
+   507→    type: ExtractorLinkType? = null,
+   508→    initializer: suspend ExtractorLink.() -> Unit = { }
+   509→): ExtractorLink {
+   510→
+   511→    @Suppress("DEPRECATION_ERROR")
+   512→    val builder =
+   513→        ExtractorLink(
+   514→            source = source,
+   515→            name = name,
+   516→            url = url,
+   517→            type = type ?: INFER_TYPE
+   518→        )
+   519→
+   520→    builder.initializer()
+   521→    return builder
+   522→}
+   523→
+   524→// Deprecate after next stable
+   525→/* @Deprecated(
+   526→    message = "Use Kotlin Uuid (kotlin.uuid.Uuid) instead of Java UUID.",
+   527→    level = DeprecationLevel.WARNING,
+   528→) */
+   529→suspend fun newDrmExtractorLink(
+   530→    source: String,
+   531→    name: String,
+   532→    url: String,
+   533→    type: ExtractorLinkType? = null,
+   534→    uuid: java.util.UUID,
+   535→    initializer: suspend DrmExtractorLink.() -> Unit = { }
+   536→): DrmExtractorLink {
+   537→    @Suppress("DEPRECATION_ERROR")
+   538→    val builder =
+   539→        DrmExtractorLink(
+   540→            source = source,
+   541→            name = name,
+   542→            url = url,
+   543→            uuid = uuid.toKotlinUuid(),
+   544→            type = type ?: INFER_TYPE
+   545→        )
+   546→
+   547→    builder.initializer()
+   548→    return builder
+   549→}
+   550→
+   551→@Prerelease
+   552→suspend fun newDrmExtractorLink(
+   553→    source: String,
+   554→    name: String,
+   555→    url: String,
+   556→    type: ExtractorLinkType? = null,
+   557→    uuid: Uuid,
+   558→    initializer: suspend DrmExtractorLink.() -> Unit = {},
+   559→): DrmExtractorLink {
+   560→    @Suppress("DEPRECATION_ERROR")
+   561→    val builder =
+   562→        DrmExtractorLink(
+   563→            source = source,
+   564→            name = name,
+   565→            url = url,
+   566→            uuid = uuid,
+   567→            type = type ?: INFER_TYPE
+   568→        )
+   569→
+   570→    builder.initializer()
+   571→    return builder
+   572→}
+   573→
+   574→/** Class holds extracted DRM media info to be passed to the player.
+   575→ * @property source Name of the media source, appears on player layout.
+   576→ * @property name Title of the media, appears on player layout.
+   577→ * @property url Url string of media file
+   578→ * @property referer Referer that will be used by network request.
+   579→ * @property quality Quality of the media file
+   580→ * @property headers Headers <String, String> map that will be used by network request.
+   581→ * @property extractorData Used for getExtractorVerifierJob()
+   582→ * @property type the type of the media, use [INFER_TYPE] if you want to auto infer the type from the url
+   583→ * @property kid  Base64 value of The KID element (Key Id) contains the identifier of the key associated with a license.
+   584→ * @property key Base64 value of Key to be used to decrypt the media file.
+   585→ * @property uuid Drm [Uuid] [WIDEVINE_DRM_UUID], [PLAYREADY_DRM_UUID], [CLEARKEY_DRM_UUID] (by default) .. etc
+   586→ * @property kty Key type "oct" (octet sequence) by default
+   587→ * @property keyRequestParameters Parameters that will used to request the key.
+   588→ * @see newDrmExtractorLink
+   589→ * */
+   590→@Suppress("DEPRECATION")
+   591→open class DrmExtractorLink private constructor(
+   592→    override val source: String,
+   593→    override val name: String,
+   594→    override val url: String,
+   595→    override var referer: String,
+   596→    override var quality: Int,
+   597→    override var headers: Map<String, String> = mapOf(),
+   598→    /** Used for getExtractorVerifierJob() */
+   599→    override var extractorData: String? = null,
+   600→    override var type: ExtractorLinkType,
+   601→    open var kid: String? = null,
+   602→    open var key: String? = null,
+   603→    open var uuid: Uuid,
+   604→    open var kty: String? = null,
+   605→    open var keyRequestParameters: HashMap<String, String>,
+   606→    open var licenseUrl: String? = null,
+   607→    override var audioTracks: List<AudioFile> = emptyList(),
+   608→) : ExtractorLink(
+   609→    source, name, url, referer, quality, headers, extractorData, type, audioTracks
+   610→) {
+   611→    @Deprecated("Use newDrmExtractorLink", level = DeprecationLevel.ERROR)
+   612→    constructor(
+   613→        source: String,
+   614→        name: String,
+   615→        url: String,
+   616→        referer: String? = null,
+   617→        quality: Int? = null,
+   618→        /** the type of the media, use INFER_TYPE if you want to auto infer the type from the url */
+   619→        type: ExtractorLinkType? = INFER_TYPE,
+   620→        headers: Map<String, String> = mapOf(),
+   621→        /** Used for getExtractorVerifierJob() */
+   622→        extractorData: String? = null,
+   623→        kid: String? = null,
+   624→        key: String? = null,
+   625→        uuid: Uuid = CLEARKEY_DRM_UUID,
+   626→        kty: String? = "oct",
+   627→        keyRequestParameters: HashMap<String, String> = hashMapOf(),
+   628→        licenseUrl: String? = null,
+   629→    ) : this(
+   630→        source = source,
+   631→        name = name,
+   632→        url = url,
+   633→        referer = referer ?: "",
+   634→        quality = quality ?: Qualities.Unknown.value,
+   635→        headers = headers,
+   636→        extractorData = extractorData,
+   637→        type = type ?: inferTypeFromUrl(url),
+   638→        kid = kid,
+   639→        key = key,
+   640→        uuid = uuid,
+   641→        keyRequestParameters = keyRequestParameters,
+   642→        kty = kty,
+   643→        licenseUrl = licenseUrl,
+   644→    )
+   645→
+   646→    @Deprecated("Use newDrmExtractorLink", level = DeprecationLevel.ERROR)
+   647→    constructor(
+   648→        source: String,
+   649→        name: String,
+   650→        url: String,
+   651→        referer: String,
+   652→        quality: Int,
+   653→        /** the type of the media, use INFER_TYPE if you want to auto infer the type from the url */
+   654→        type: ExtractorLinkType?,
+   655→        headers: Map<String, String> = mapOf(),
+   656→        /** Used for getExtractorVerifierJob() */
+   657→        extractorData: String? = null,
+   658→        kid: String? = null,
+   659→        key: String? = null,
+   660→        uuid: Uuid = CLEARKEY_DRM_UUID,
+   661→        kty: String? = "oct",
+   662→        keyRequestParameters: HashMap<String, String> = hashMapOf(),
+   663→        licenseUrl: String? = null,
+   664→    ) : this(
+   665→        source = source,
+   666→        name = name,
+   667→        url = url,
+   668→        referer = referer,
+   669→        quality = quality,
+   670→        headers = headers,
+   671→        extractorData = extractorData,
+   672→        type = type ?: inferTypeFromUrl(url),
+   673→        kid = kid,
+   674→        key = key,
+   675→        uuid = uuid,
+   676→        keyRequestParameters = keyRequestParameters,
+   677→        kty = kty,
+   678→        licenseUrl = licenseUrl,
+   679→    )
+   680→
+   681→    @Deprecated(message = "Use Kotlin Uuid", level = DeprecationLevel.HIDDEN)
+   682→    fun setUuid(uuid: java.util.UUID) {
+   683→        this.uuid = uuid.toKotlinUuid()
+   684→    }
+   685→
+   686→    @Deprecated(message = "Use Kotlin Uuid", level = DeprecationLevel.HIDDEN)
+   687→    fun getUuid(): java.util.UUID = this.uuid.toJavaUuid()
+   688→}
+   689→
+   690→/** Class holds extracted media info to be passed to the player.
+   691→ * @property source Name of the media source, appears on player layout.
+   692→ * @property name Title of the media, appears on player layout.
+   693→ * @property url Url string of media file
+   694→ * @property referer Referer that will be used by network request.
+   695→ * @property quality Quality of the media file
+   696→ * @property headers Headers <String, String> map that will be used by network request.
+   697→ * @property extractorData Used for getExtractorVerifierJob()
+   698→ * @property type Extracted link type (Video, M3u8, Dash, Torrent or Magnet)
+   699→ * @property audioTracks List of separate audio tracks that can be used with this video
+   700→ * @see newExtractorLink
+   701→ * */
+   702→@Serializable
+   703→open class ExtractorLink
+   704→@Deprecated("Use newExtractorLink", level = DeprecationLevel.WARNING)
+   705→constructor(
+   706→    @SerialName("source") open val source: String,
+   707→    @SerialName("name") open val name: String,
+   708→    @SerialName("url") override val url: String,
+   709→    @SerialName("referer") override var referer: String,
+   710→    @SerialName("quality") open var quality: Int,
+   711→    @SerialName("headers") override var headers: Map<String, String> = mapOf(),
+   712→    /** Used for getExtractorVerifierJob() */
+   713→    @SerialName("extractorData") open var extractorData: String? = null,
+   714→    @SerialName("type") open var type: ExtractorLinkType,
+   715→    /** List of separate audio tracks that can be merged with this video */
+   716→    @SerialName("audioTracks") open var audioTracks: List<AudioFile> = emptyList(),
+   717→) : IDownloadableMinimum {
+   718→    @get:JsonIgnore val isM3u8: Boolean get() = type == ExtractorLinkType.M3U8
+   719→    @get:JsonIgnore val isDash: Boolean get() = type == ExtractorLinkType.DASH
+   720→
+   721→    // Cached video size
+   722→    @Transient private var videoSize: Long? = null
+   723→
+   724→    /**
+   725→     * Get video size in bytes with one head request. Only available for ExtractorLinkType.Video
+   726→     * @param timeoutSeconds timeout of the head request.
+   727→     */
+   728→    suspend fun getVideoSize(timeoutSeconds: Long = 3L): Long? {
+   729→        // Content-Length is not applicable to other types of formats
+   730→        if (this.type != ExtractorLinkType.VIDEO) return null
+   731→
+   732→        videoSize = videoSize ?: runCatching {
+   733→            val response =
+   734→                app.head(this.url, headers = headers, referer = referer, timeout = timeoutSeconds)
+   735→            response.headers["Content-Length"]?.toLong()
+   736→        }.getOrNull()
+   737→
+   738→        return videoSize
+   739→    }
+   740→
+   741→    @JsonIgnore
+   742→    fun getAllHeaders(): Map<String, String> {
+   743→        if (referer.isBlank()) {
+   744→            return headers
+   745→        } else if (headers.keys.none { it.equals("referer", ignoreCase = true) }) {
+   746→            return headers + mapOf("referer" to referer)
+   747→        }
+   748→        return headers
+   749→    }
+   750→
+   751→    @Suppress("DEPRECATION")
+   752→    @Deprecated("Use newExtractorLink", level = DeprecationLevel.ERROR)
+   753→    constructor(
+   754→        source: String,
+   755→        name: String,
+   756→        url: String,
+   757→        referer: String? = null,
+   758→        quality: Int? = null,
+   759→        /** the type of the media, use INFER_TYPE if you want to auto infer the type from the url */
+   760→        type: ExtractorLinkType? = INFER_TYPE,
+   761→        headers: Map<String, String> = mapOf(),
+   762→        /** Used for getExtractorVerifierJob() */
+   763→        extractorData: String? = null,
+   764→    ) : this(
+   765→        source = source,
+   766→        name = name,
+   767→        url = url,
+   768→        referer = referer ?: "",
+   769→        quality = quality ?: Qualities.Unknown.value,
+   770→        headers = headers,
+   771→        extractorData = extractorData,
+   772→        type = type ?: inferTypeFromUrl(url)
+   773→    )
+   774→
+   775→    @Suppress("DEPRECATION")
+   776→    @Deprecated("Use newExtractorLink", level = DeprecationLevel.ERROR)
+   777→    constructor(
+   778→        source: String,
+   779→        name: String,
+   780→        url: String,
+   781→        referer: String,
+   782→        quality: Int,
+   783→        /** the type of the media, use INFER_TYPE if you want to auto infer the type from the url */
+   784→        type: ExtractorLinkType?,
+   785→        headers: Map<String, String> = mapOf(),
+   786→        /** Used for getExtractorVerifierJob() */
+   787→        extractorData: String? = null,
+   788→    ) : this(
+   789→        source = source,
+   790→        name = name,
+   791→        url = url,
+   792→        referer = referer,
+   793→        quality = quality,
+   794→        headers = headers,
+   795→        extractorData = extractorData,
+   796→        type = type ?: inferTypeFromUrl(url)
+   797→    )
+   798→
+   799→    /**
+   800→     * Old constructor without isDash, allows for backwards compatibility with extensions.
+   801→     * Should be removed after all extensions have updated their cloudstream.jar
+   802→     **/
+   803→    @Suppress("DEPRECATION_ERROR")
+   804→    @Deprecated("Use newExtractorLink", level = DeprecationLevel.ERROR)
+   805→    constructor(
+   806→        source: String,
+   807→        name: String,
+   808→        url: String,
+   809→        referer: String,
+   810→        quality: Int,
+   811→        isM3u8: Boolean = false,
+   812→        headers: Map<String, String> = mapOf(),
+   813→        /** Used for getExtractorVerifierJob() */
+   814→        extractorData: String? = null
+   815→    ) : this(source, name, url, referer, quality, isM3u8, headers, extractorData, false)
+   816→
+   817→    @Suppress("DEPRECATION")
+   818→    @Deprecated("Use newExtractorLink", level = DeprecationLevel.ERROR)
+   819→    constructor(
+   820→        source: String,
+   821→        name: String,
+   822→        url: String,
+   823→        referer: String,
+   824→        quality: Int,
+   825→        isM3u8: Boolean = false,
+   826→        headers: Map<String, String> = mapOf(),
+   827→        /** Used for getExtractorVerifierJob() */
+   828→        extractorData: String? = null,
+   829→        isDash: Boolean,
+   830→    ) : this(
+   831→        source = source,
+   832→        name = name,
+   833→        url = url,
+   834→        referer = referer,
+   835→        quality = quality,
+   836→        headers = headers,
+   837→        extractorData = extractorData,
+   838→        type = if (isDash) ExtractorLinkType.DASH else if (isM3u8) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+   839→    )
+   840→
+   841→    override fun toString(): String {
+   842→        return "ExtractorLink(name=$name, url=$url, referer=$referer, type=$type)"
+   843→    }
+   844→}
+   845→
+   846→/**
+   847→ * Removes https:// and www.
+   848→ * To match urls regardless of schema, perhaps Url() can be used?
+   849→ */
+   850→val schemaStripRegex = Regex("""^(https:|)//(www\.|)""")
+   851→
+   852→enum class Qualities(var value: Int, val defaultPriority: Int) {
+   853→    Unknown(400, 4),
+   854→    P144(144, 0), // 144p
+   855→    P240(240, 2), // 240p
+   856→    P360(360, 3), // 360p
+   857→    P480(480, 4), // 480p
+   858→    P720(720, 5), // 720p
+   859→    P1080(1080, 6), // 1080p
+   860→    P1440(1440, 7), // 1440p
+   861→    P2160(2160, 8); // 4k or 2160p
+   862→
+   863→    companion object {
+   864→        fun getStringByInt(qual: Int?): String {
+   865→            return when (qual) {
+   866→                0 -> "Auto"
+   867→                Unknown.value -> ""
+   868→                P2160.value -> "4K"
+   869→                null -> ""
+   870→                else -> "${qual}p"
+   871→            }
+   872→        }
+   873→
+   874→        fun getStringByIntFull(quality: Int): String {
+   875→            return when (quality) {
+   876→                0 -> "Auto"
+   877→                Unknown.value -> "Unknown"
+   878→                P2160.value -> "4K"
+   879→                else -> "${quality}p"
+   880→            }
+   881→        }
+   882→    }
+   883→}
+   884→
+   885→fun getQualityFromName(qualityName: String?): Int {
+   886→    if (qualityName == null)
+   887→        return Qualities.Unknown.value
+   888→
+   889→    val match = qualityName.lowercase().replace("p", "").trim()
+   890→    return when (match) {
+   891→        "4k" -> Qualities.P2160
+   892→        else -> null
+   893→    }?.value ?: match.toIntOrNull() ?: Qualities.Unknown.value
+   894→}
+   895→
+   896→private val packedRegex = Regex("""eval\(function\(p,a,c,k,e,.*\)\)""")
+   897→fun getPacked(string: String): String? {
+   898→    return packedRegex.find(string)?.value
+   899→}
+   900→
+   901→fun getAndUnpack(string: String): String {
+   902→    val packedText = getPacked(string)
+   903→    return JsUnpacker(packedText).unpack() ?: string
+   904→}
+   905→
+   906→suspend fun unshortenLinkSafe(url: String): String {
+   907→    return try {
+   908→        if (ShortLink.isShortLink(url))
+   909→            ShortLink.unshorten(url)
+   910→        else url
+   911→    } catch (e: Exception) {
+   912→        logError(e)
+   913→        url
+   914→    }
+   915→}
+   916→
+   917→suspend fun loadExtractor(
+   918→    url: String,
+   919→    subtitleCallback: (SubtitleFile) -> Unit,
+   920→    callback: (ExtractorLink) -> Unit
+   921→): Boolean {
+   922→    return loadExtractor(
+   923→        url = url,
+   924→        referer = null,
+   925→        subtitleCallback = subtitleCallback,
+   926→        callback = callback
+   927→    )
+   928→}
+   929→
+   930→
+   931→/**
+   932→ * Tries to load the appropriate extractor based on link, returns true if any extractor is loaded.
+   933→ * */
+   934→@Throws(CancellationException::class)
+   935→suspend fun loadExtractor(
+   936→    url: String,
+   937→    referer: String? = null,
+   938→    subtitleCallback: (SubtitleFile) -> Unit,
+   939→    callback: (ExtractorLink) -> Unit
+   940→): Boolean {
+   941→    // Ensure this coroutine has not timed out
+   942→    coroutineScope { ensureActive() }
+   943→
+   944→    val currentUrl = unshortenLinkSafe(url)
+   945→    val compareUrl = currentUrl.lowercase().replace(schemaStripRegex, "")
+   946→
+   947→    // Iterate in reverse order so the new registered ExtractorApi takes priority
+   948→    for (index in extractorApis.lastIndex downTo 0) {
+   949→        val extractor = extractorApis[index]
+   950→        if (compareUrl.startsWith(extractor.mainUrl.replace(schemaStripRegex, ""))) {
+   951→            try {
+   952→                extractor.getUrl(currentUrl, referer, subtitleCallback, callback)
+   953→            } catch (e: Exception) {
+   954→                logError(e)
+   955→                // Rethrow if we have timed out
+   956→                if (e is CancellationException) {
+   957→                    throw e
+   958→                }
+   959→            }
+   960→            return true
+   961→        }
+   962→    }
+   963→
+   964→    // this is to match mirror domains - like example.com, example.net
+   965→    for (index in extractorApis.lastIndex downTo 0) {
+   966→        val extractor = extractorApis[index]
+   967→        if (Levenshtein.partialRatio(
+   968→                extractor.mainUrl,
+   969→                currentUrl
+   970→            ) > 80
+   971→        ) {
+   972→            try {
+   973→                extractor.getUrl(currentUrl, referer, subtitleCallback, callback)
+   974→            } catch (e: Exception) {
+   975→                logError(e)
+   976→                // Rethrow if we have timed out
+   977→                if (e is CancellationException) {
+   978→                    throw e
+   979→                }
+   980→            }
+   981→            return true
+   982→        }
+   983→    }
+   984→
+   985→    return false
+   986→}
+   987→
+   988→val extractorApis: AtomicMutableList<ExtractorApi> = atomicListOf(
+   989→    //AllProvider(),
+   990→    Mp4Upload(),
+   991→    StreamTape(),
+   992→    StreamTapeNet(),
+   993→    ShaveTape(),
+   994→    StreamTapeXyz(),
+   995→    Watchadsontape(),
+   996→
+   997→    //mixdrop extractors
+   998→    MixDropBz(),
+   999→    MixDropCh(),
+  1000→    MixDropTo(),
+  1001→    MixDropAg(),
+  1002→    MixDrop(),
+  1003→    MixDropPs(),
+  1004→    Mdy(),
+  1005→    MxDropTo(),
+  1006→    MixDropSi(),
+  1007→
+  1008→    XStreamCdn(),
+  1009→
+  1010→    StreamSB(),
+  1011→    Sblona(),
+  1012→    Vidgomunimesb(),
+  1013→    StreamSilk(),
+  1014→    StreamSB1(),
+  1015→    StreamSB2(),
+  1016→    StreamSB3(),
+  1017→    StreamSB4(),
+  1018→    StreamSB5(),
+  1019→    StreamSB6(),
+  1020→    StreamSB7(),
+  1021→    StreamSB8(),
+  1022→    StreamSB9(),
+  1023→    StreamSB10(),
+  1024→    StreamSB11(),
+  1025→    SBfull(),
+  1026→    // Streamhub(), cause Streamhub2() works
+  1027→    Streamhub2(),
+  1028→    Ssbstream(),
+  1029→    Sbthe(),
+  1030→    Vidgomunime(),
+  1031→    Sbflix(),
+  1032→    Streamsss(),
+  1033→    Sbspeed(),
+  1034→    Sbsonic(),
+  1035→    Sbface(),
+  1036→    Sbrapid(),
+  1037→    Lvturbo(),
+  1038→
+  1039→    Fastream(),
+  1040→    Videa(),
+  1041→    FEmbed(),
+  1042→    FeHD(),
+  1043→    Fplayer(),
+  1044→    DBfilm(),
+  1045→    Luxubu(),
+  1046→    LayarKaca(),
+  1047→    Rasacintaku(),
+  1048→    FEnet(),
+  1049→    Kotakajair(),
+  1050→    Cdnplayer(),
+  1051→    //  WatchSB(), 'cause StreamSB.kt works
+  1052→    Uqload(),
+  1053→    Uqload1(),
+  1054→    Uqload2(),
+  1055→    Uqloadcx(),
+  1056→    Uqloadbz(),
+  1057→    Evoload(),
+  1058→    Evoload1(),
+  1059→    UpstreamExtractor(),
+  1060→
+  1061→    Odnoklassniki(),
+  1062→    TauVideo(),
+  1063→    SibNet(),
+  1064→    ContentX(),
+  1065→    Hotlinger(),
+  1066→    FourCX(),
+  1067→    PlayRu(),
+  1068→    FourPlayRu(),
+  1069→    Pichive(),
+  1070→    FourPichive(),
+  1071→    HDMomPlayer(),
+  1072→    HDPlayerSystem(),
+  1073→    VideoSeyred(),
+  1074→    PeaceMakerst(),
+  1075→    HDStreamAble(),
+  1076→    RapidVid(),
+  1077→    TRsTX(),
+  1078→    VidMoxy(),
+  1079→    Sobreatsesuyp(),
+  1080→    PixelDrain(),
+  1081→    PixelDrainDev(),
+  1082→    MailRu(),
+  1083→
+  1084→    OkRuSSL(),
+  1085→    OkRuSSLMobile(),
+  1086→    OkRuHTTP(),
+  1087→    OkRuHTTPMobile(),
+  1088→    Sendvid(),
+  1089→
+  1090→    // dood extractors
+  1091→    DoodCxExtractor(),
+  1092→    DoodPmExtractor(),
+  1093→    DoodToExtractor(),
+  1094→    DoodSoExtractor(),
+  1095→    DoodLaExtractor(),
+  1096→    Dooood(),
+  1097→    D0000d(),
+  1098→    D000dCom(),
+  1099→    DoodstreamCom(),
+  1100→    DoodWsExtractor(),
+  1101→    DoodShExtractor(),
+  1102→    DoodWatchExtractor(),
+  1103→    DoodWfExtractor(),
+  1104→    DoodYtExtractor(),
+  1105→    Doodspro(),
+  1106→    Dsvplay(),
+  1107→
+  1108→    // GenericM3U8(),
+  1109→    Zplayer(),
+  1110→    ZplayerV2(),
+  1111→    Upstream(),
+  1112→
+  1113→    Maxstream(),
+  1114→    Tantifilm(),
+  1115→    Userload(),
+  1116→    Supervideo(),
+  1117→    Streamcash(),
+  1118→
+  1119→    // StreamSB.kt works
+  1120→    //  SBPlay(),
+  1121→    //  SBPlay1(),
+  1122→    //  SBPlay2(),
+  1123→
+  1124→    PlayerVoxzer(),
+  1125→
+  1126→    Blogger(),
+  1127→    YourUpload(),
+  1128→
+  1129→    Hxfile(),
+  1130→    KotakAnimeid(),
+  1131→    Neonime8n(),
+  1132→    Neonime7n(),
+  1133→    Yufiles(),
+  1134→    Aico(),
+  1135→
+  1136→    JWPlayer(),
+  1137→    Meownime(),
+  1138→    DesuArcg(),
+  1139→    DesuOdchan(),
+  1140→    DesuOdvip(),
+  1141→    DesuDrive(),
+  1142→
+  1143→
+  1144→    Keephealth(),
+  1145→    Sbnet(),
+  1146→    Sbasian(),
+  1147→    Sblongvu(),
+  1148→    Fembed9hd(),
+  1149→    StreamM4u(),
+  1150→    Krakenfiles(),
+  1151→    Gofile(),
+  1152→    Vicloud(),
+  1153→    Uservideo(),
+  1154→    Userscloud(),
+  1155→    HubuCloud(),
+  1156→
+  1157→    Movhide(),
+  1158→    StreamhideCom(),
+  1159→    StreamhideTo(),
+  1160→    Wibufile(),
+  1161→    FileMoonIn(),
+  1162→    Moviesm4u(),
+  1163→    Filesim(),
+  1164→    Multimoviesshg(),
+  1165→    Ahvsh(),
+  1166→    Guccihide(),
+  1167→    FileMoon(),
+  1168→    FileMoonSx(),
+  1169→    FilemoonV2(),
+  1170→
+  1171→    Vido(),
+  1172→    Linkbox(),
+  1173→    Acefile(),
+  1174→    Embedgram(),
+  1175→    Mvidoo(),
+  1176→    Streamplay(),
+  1177→    Vidmoly(),
+  1178→    Vidmolyme(),
+  1179→    Vidmolyto(),
+  1180→    Vidmolybiz(),
+  1181→    Voe(),
+  1182→    Voe1(),
+  1183→    Voe2(),
+  1184→    Tubeless(),
+  1185→    Moviehab(),
+  1186→    MoviehabNet(),
+  1187→    Jeniusplay(),
+  1188→    StreamoUpload(),
+  1189→    Vidara(),
+  1190→    Vidavaca(),
+  1191→    Vidaraa(),
+  1192→    Vidaraw(),
+  1193→    Vidarax(),
+  1194→    VidaraSo(),
+  1195→    Vidaratem(),
+  1196→    VidaaraxCom(),
+  1197→    VidaaraxNet(),
+  1198→    Odysseusa(),
+  1199→    Handfacesnap(),
+  1200→    Namefacesnap(),
+  1201→    Thebesthostertv(),
+  1202→    Vidmatrixa(),
+  1203→    VidChampions(),
+  1204→    Antarcticadocs(),
+  1205→    Nameitweb(),
+  1206→
+  1207→    GamoVideo(),
+  1208→    Gdriveplayerapi(),
+  1209→    Gdriveplayerapp(),
+  1210→    Gdriveplayerfun(),
+  1211→    Gdriveplayerio(),
+  1212→    Gdriveplayerme(),
+  1213→    Gdriveplayerbiz(),
+  1214→    Gdriveplayerorg(),
+  1215→    Gdriveplayerus(),
+  1216→    Gdriveplayerco(),
+  1217→    GoodstreamExtractor(),
+  1218→    Gdriveplayer(),
+  1219→    DatabaseGdrive(),
+  1220→    DatabaseGdrive2(),
+  1221→    Mediafire(),
+  1222→
+  1223→    YoutubeExtractor(),
+  1224→    YoutubeShortLinkExtractor(),
+  1225→    YoutubeMobileExtractor(),
+  1226→    YoutubeNoCookieExtractor(),
+  1227→    Streamlare(),
+  1228→    PlayLtXyz(),
+  1229→
+  1230→    Cda(),
+  1231→    Dailymotion(),
+  1232→    Ztreamhub(),
+  1233→    Rabbitstream(),
+  1234→    Dokicloud(),
+  1235→    Megacloud(),
+  1236→    VidhideExtractor(),
+  1237→    VidHidePro(),
+  1238→    VidHidePro1(),
+  1239→    VidHidePro2(),
+  1240→    VidHidePro3(),
+  1241→    VidHidePro4(),
+  1242→    VidHidePro5(),
+  1243→    VidHidePro6(),
+  1244→    VidHideHub(),
+  1245→    Ryderjet(),
+  1246→    VidNest(),
+  1247→    Dhtpre(),
+  1248→
+  1249→    // CineMM Redirects
+  1250→    Dhcplay(),
+  1251→    HglinkTo(),
+  1252→
+  1253→    // CineMM mirrors
+  1254→    HgplayCDN(),
+  1255→    Habetar(),
+  1256→    Yuguaab(),
+  1257→    Guxhag(),
+  1258→    Auvexiug(),
+  1259→    Xenolyzb(),
+  1260→    Haxloppd(),
+  1261→    Cavanhabg(),
+  1262→    Dumbalag(),
+  1263→    Uasopt(),
+  1264→
+  1265→    Smoothpre(),
+  1266→    Peytonepre(),
+  1267→    LuluStream(),
+  1268→    Lulustream1(),
+  1269→    Lulustream2(),
+  1270→    Luluvdoo(),
+  1271→    StreamWishExtractor(),
+  1272→    StreamHLS(),
+  1273→    BigwarpIO(),
+  1274→    BigwarpArt(),
+  1275→    BgwpCC(),
+  1276→    WishembedPro(),
+  1277→    CdnwishCom(),
+  1278→    FlaswishCom(),
+  1279→    SfastwishCom(),
+  1280→    Playerwish(),
+  1281→    StreamEmbed(),
+  1282→    EmturbovidExtractor(),
+  1283→    Vtbe(),
+  1284→    SecvideoOnline(),
+  1285→    FsstOnline(),
+  1286→    CsstOnline(),
+  1287→    DsstOnline(),
+  1288→    Simpulumlamerop(),
+  1289→    Urochsunloath(),
+  1290→    NathanFromSubject(),
+  1291→    Yipsu(),
+  1292→    MetaGnathTuggers(),
+  1293→    Geodailymotion(),
+  1294→    Mwish(),
+  1295→    Hgcloudto(),
+  1296→    Dwish(),
+  1297→    Ewish(),
+  1298→    Kswplayer(),
+  1299→    Wishfast(),
+  1300→    Streamwish2(),
+  1301→    Strwish(),
+  1302→    Strwish2(),
+  1303→    Awish(),
+  1304→    Obeywish(),
+  1305→    Jodwish(),
+  1306→    Swhoi(),
+  1307→    Multimovies(),
+  1308→    UqloadsXyz(),
+  1309→    Doodporn(),
+  1310→    Asnwish(),
+  1311→    Nekowish(),
+  1312→    Nekostream(),
+  1313→    Swdyu(),
+  1314→    Wishonly(),
+  1315→    Ds2play(),
+  1316→    Ds2video(),
+  1317→    Vidsonic(),
+  1318→    Vixeo(),
+  1319→    InternetArchive(),
+  1320→    VidStack(),
+  1321→    GDMirrorbot(),
+  1322→    Techinmind(),
+  1323→    Server1uns(),
+  1324→    VinovoSi(),
+  1325→    VinovoTo(),
+  1326→    Vidoza(),
+  1327→    Videzz(),
+  1328→    CloudMailRu(),
+  1329→    HubCloud(),
+  1330→    VkExtractor(),
+  1331→    Bysezejataos(),
+  1332→    ByseSX(),
+  1333→    ByseVepoin(),
+  1334→    ByseBuho(),
+  1335→    MyVidPlay(),
+  1336→    Playmogo(),
+  1337→    Vide0Net(),
+  1338→    Up4Stream(),
+  1339→    Up4FunTop(),
+  1340→    GUpload(),
+  1341→    HlsWish(),
+  1342→    ByseQekaho(),
+  1343→    Flyfile(),
+  1344→    Firestream(),
+  1345→    FirestreamSite(),
+  1346→    Vids(),
+  1347→    Playmate(),
+  1348→    Hexload(),
+  1349→)
+  1350→
+  1351→
+  1352→fun getExtractorApiFromName(name: String): ExtractorApi {
+  1353→    for (api in extractorApis) {
+  1354→        if (api.name == name) return api
+  1355→    }
+  1356→    return extractorApis[0]
+  1357→}
+  1358→
+  1359→fun requireReferer(name: String): Boolean {
+  1360→    return getExtractorApiFromName(name).requiresReferer
+  1361→}
+  1362→
+  1363→fun httpsify(url: String): String {
+  1364→    return if (url.startsWith("//")) "https:$url" else url
+  1365→}
+  1366→
+  1367→suspend fun getPostForm(requestUrl: String, html: String): String? {
+  1368→    val document = Ksoup.parse(html)
+  1369→    val inputs = document.select("Form > input")
+  1370→    if (inputs.size < 4) return null
+  1371→    var op: String? = null
+  1372→    var id: String? = null
+  1373→    var mode: String? = null
+  1374→    var hash: String? = null
+  1375→
+  1376→    for (input in inputs) {
+  1377→        val value = input.attr("value")
+  1378→        when (input.attr("name")) {
+  1379→            "op" -> op = value
+  1380→            "id" -> id = value
+  1381→            "mode" -> mode = value
+  1382→            "hash" -> hash = value
+  1383→            else -> Unit
+  1384→        }
+  1385→    }
+  1386→    if (op == null || id == null || mode == null || hash == null) {
+  1387→        return null
+  1388→    }
+  1389→    delay(5000) // ye this is needed, wont work with 0 delay
+  1390→
+  1391→    return app.post(
+  1392→        requestUrl,
+  1393→        headers = mapOf(
+  1394→            "content-type" to "application/x-www-form-urlencoded",
+  1395→            "referer" to requestUrl,
+  1396→            "user-agent" to USER_AGENT,
+  1397→            "accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+  1398→        ),
+  1399→        data = mapOf("op" to op, "id" to id, "mode" to mode, "hash" to hash)
+  1400→    ).text
+  1401→}
+  1402→
+  1403→fun ExtractorApi.fixUrl(url: String): String {
+  1404→    if (url.startsWith("http") ||
+  1405→        // Do not fix JSON objects when passed as urls.
+  1406→        url.startsWith("{\"")
+  1407→    ) {
+  1408→        return url
+  1409→    }
+  1410→    if (url.isEmpty()) {
+  1411→        return ""
+  1412→    }
+  1413→
+  1414→    val startsWithNoHttp = url.startsWith("//")
+  1415→    if (startsWithNoHttp) {
+  1416→        return "https:$url"
+  1417→    } else {
+  1418→        if (url.startsWith('/')) {
+  1419→            return mainUrl + url
+  1420→        }
+  1421→        return "$mainUrl/$url"
+  1422→    }
+  1423→}
+  1424→
+  1425→abstract class ExtractorApi {
+  1426→    abstract val name: String
+  1427→    abstract val mainUrl: String
+  1428→    abstract val requiresReferer: Boolean
+  1429→
+  1430→    /** Determines which plugin a given provider is from. This is the full path to the plugin. */
+  1431→    var sourcePlugin: String? = null
+  1432→
+  1433→    //suspend fun getSafeUrl(url: String, referer: String? = null): List<ExtractorLink>? {
+  1434→    //    return safeAsync { getUrl(url, referer) }
+  1435→    //}
+  1436→
+  1437→    // this is the new extractorapi, override to add subtitles and stuff
+  1438→    @Throws
+  1439→    open suspend fun getUrl(
+  1440→        url: String,
+  1441→        referer: String? = null,
+  1442→        subtitleCallback: (SubtitleFile) -> Unit,
+  1443→        callback: (ExtractorLink) -> Unit
+  1444→    ) {
+  1445→        getUrl(url, referer)?.forEach(callback)
+  1446→    }
+  1447→
+  1448→    suspend fun getSafeUrl(
+  1449→        url: String,
+  1450→        referer: String? = null,
+  1451→        subtitleCallback: (SubtitleFile) -> Unit,
+  1452→        callback: (ExtractorLink) -> Unit
+  1453→    ) {
+  1454→        try {
+  1455→            getUrl(url, referer, subtitleCallback, callback)
+  1456→        } catch (e: Exception) {
+  1457→            logError(e)
+  1458→        }
+  1459→    }
+  1460→
+  1461→    /**
+  1462→     * Will throw errors, use getSafeUrl if you don't want to handle the exception yourself
+  1463→     */
+  1464→    @Throws
+  1465→    open suspend fun getUrl(url: String, referer: String? = null): List<ExtractorLink>? {
+  1466→        return emptyList()
+  1467→    }
+  1468→
+  1469→    open fun getExtractorUrl(id: String): String {
+  1470→        return id
+  1471→    }
+  1472→}
+  1473→

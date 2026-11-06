@@ -96,6 +96,10 @@ object PluginLoader {
             // Plugins override either load() (cross-platform) or load(Context) (Android).
             // Try the Android-signature load(Context) first — most CS3 plugins use it.
             // Our android.content.Context stub lets the bytecode link.
+            // Pass a real Context stub instance (not null) — many plugins call
+            // context.getSharedPreferences() or context.getApplicationContext()
+            // in their load() body and would NPE on null.
+            val contextStub = android.content.Context()
             try {
                 val loadWithContext = pluginClass.methods.firstOrNull {
                     it.name == "load" && it.parameterTypes.size == 1 &&
@@ -103,7 +107,7 @@ object PluginLoader {
                 }
                 if (loadWithContext != null) {
                     log.debug("Invoking load(Context) for ${manifest.name}")
-                    loadWithContext.invoke(instance, null as android.content.Context?)
+                    loadWithContext.invoke(instance, contextStub)
                 } else {
                     instance.load()
                 }

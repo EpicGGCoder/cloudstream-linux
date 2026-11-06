@@ -1,7 +1,6 @@
 package androidx.appcompat.app
 
 import android.content.Context
-import android.content.NoopSharedPreferences
 import android.content.SharedPreferences
 
 /**
@@ -12,16 +11,10 @@ import android.content.SharedPreferences
  * On JVM desktop there's no Activity — this stub exists only so plugin
  * bytecode can link and load without crashing at class-resolution time.
  *
- * Methods like `getSharedPreferences` and `getSupportFragmentManager`
- * are stubbed to return sensible defaults (empty prefs, empty fragment
- * manager) so plugins that call them don't NPE during load().
+ * Extends our android.content.Context stub which already provides the
+ * getSharedPreferences / getApplicationContext methods plugins need.
  */
 open class AppCompatActivity : Context() {
-
-    /** Stub: returns an empty in-memory preferences map. */
-    fun getSharedPreferences(name: String, mode: Int): SharedPreferences {
-        return NoopSharedPreferences
-    }
 
     /** Stub: returns an empty FragmentManager. */
     fun getSupportFragmentManager(): androidx.fragment.app.FragmentManager {

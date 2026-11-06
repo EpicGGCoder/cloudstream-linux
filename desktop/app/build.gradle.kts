@@ -87,6 +87,31 @@ val pluginTest by tasks.registering(JavaExec::class) {
 }
 
 // ============================================================================
+// Bulk plugin test — loads EVERY .cs3 in test-plugins/ and reports status
+// ============================================================================
+val bulkPluginTest by tasks.registering(JavaExec::class) {
+    group = "verification"
+    description = "Loads every .cs3 in test-plugins/ and reports compatibility matrix"
+    dependsOn(":app:jvmJar", ":library:jvmJar")
+
+    val cp = sourceSets.getByName("jvmMain").runtimeClasspath
+    classpath = cp + files("app/resources/dex-tools/lib/*")
+
+    mainClass.set("com.lagradost.cloudstream4.test.BulkPluginTest")
+    args = listOf("test-plugins")
+
+    jvmArgs(
+        "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+        "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
+        "--add-opens", "java.base/java.util=ALL-UNNAMED",
+        "--add-opens", "java.base/java.io=ALL-UNNAMED",
+    )
+
+    workingDir = rootProject.layout.projectDirectory.asFile
+    standardOutput = System.out
+}
+
+// ============================================================================
 // Desktop packaging — produces .deb + .AppImage via jpackage + appimagetool
 // ============================================================================
 compose.desktop {

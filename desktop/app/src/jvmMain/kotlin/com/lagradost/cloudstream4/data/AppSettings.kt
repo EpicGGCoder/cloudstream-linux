@@ -34,6 +34,12 @@ data class SettingsData(
     val autoDownloadPlugins: Boolean = false,
     val showAppUpdates: Boolean = true,
     val skipUpdate: Int = 0,
+    val dnsOverride: String = "",
+    val resizeMode: String = "Fit",
+    val posterSize: String = "Medium",
+    val ratingsDisplay: Boolean = true,
+    val bufferMs: Int = 30_000,
+    val searchHistory: List<String> = emptyList(),
 )
 
 class AppSettings(private val dataDir: File) {
