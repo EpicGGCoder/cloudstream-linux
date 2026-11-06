@@ -44,3 +44,9 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
+
+# Build artifacts (don't commit these!)
+app/build/
+library/build/
+shared/build/
+app/resources/dex-tools/
