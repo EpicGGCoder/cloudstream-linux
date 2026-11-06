@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
@@ -38,6 +39,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -164,6 +166,16 @@ fun PluginsScreen(
         derivedStateOf { installed.map { it.sourceUrl }.toSet() }
     }
 
+    // Auto-scroll to fetched plugins when they appear
+    val listState = rememberLazyListState()
+    LaunchedEffect(fetchedRepo) {
+        if (fetchedRepo != null && fetchedPlugins.isNotEmpty()) {
+            val targetIndex = 4 + installed.size + 1
+            kotlinx.coroutines.delay(300) // wait for list to update
+            listState.animateScrollToItem(targetIndex)
+        }
+    }
+
     fun doFetch(url: String) {
         if (url.isBlank()) return
         scope.launch {
@@ -182,6 +194,7 @@ fun PluginsScreen(
 
     LazyColumn(
         Modifier.fillMaxSize(),
+        state = listState,
         contentPadding = PaddingValues(bottom = 32.dp),
     ) {
         item {

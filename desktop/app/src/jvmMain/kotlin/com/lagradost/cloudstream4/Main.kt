@@ -38,6 +38,7 @@ import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream4.data.AppSettings
 import com.lagradost.cloudstream4.data.DataStoreHelper
 import com.lagradost.cloudstream4.network.WebViewResolverJvm
+import com.lagradost.cloudstream4.plugin.DexToolsManager
 import com.lagradost.cloudstream4.plugin.PluginManager
 import com.lagradost.cloudstream4.repo.RepositoryManager
 import com.lagradost.cloudstream4.ui.DetailScreen
@@ -77,7 +78,9 @@ fun main() = application {
 
     WebViewResolverJvm.init()
 
+    // Auto-download dex-tools if not present (needed for .cs3 plugin loading)
     LaunchedEffect(Unit) {
+        DexToolsManager.init(dataDir)
         pluginManager.loadAllSavedPlugins()
     }
 
