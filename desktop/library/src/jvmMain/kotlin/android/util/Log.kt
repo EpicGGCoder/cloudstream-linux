@@ -25,6 +25,15 @@ object Log {
         return 0
     }
     @JvmStatic
+    fun w(tag: String, msg: String, throwable: Throwable?): Int {
+        if (throwable != null) {
+            org.slf4j.LoggerFactory.getLogger(tag).warn(msg, throwable)
+        } else {
+            org.slf4j.LoggerFactory.getLogger(tag).warn(msg)
+        }
+        return 0
+    }
+    @JvmStatic
     fun e(tag: String, msg: String, throwable: Throwable? = null): Int {
         if (throwable != null) {
             org.slf4j.LoggerFactory.getLogger(tag).error(msg, throwable)

@@ -14,6 +14,21 @@ open class WebSettings {
     var userAgentString: String = ""
     var blockNetworkImage: Boolean = false
     var cacheMode: Int = 0
+    var loadsImagesAutomatically: Boolean = true
+    var mediaPlaybackRequiresUserGesture: Boolean = true
+    var javaScriptCanOpenWindowsAutomatically: Boolean = false
+    var allowFileAccess: Boolean = true
+    var allowContentAccess: Boolean = true
+    var databaseEnabled: Boolean = false
+    var saveFormData: Boolean = false
+    var savePassword: Boolean = false
+    var geolocationEnabled: Boolean = false
+    var appCacheEnabled: Boolean = false
+    var builtInZoomControls: Boolean = false
+    var displayZoomControls: Boolean = true
+    var supportZoom: Boolean = true
+    var loadWithOverviewMode: Boolean = false
+    var useWideViewPort: Boolean = true
 
     companion object {
         const val LOAD_DEFAULT = 1

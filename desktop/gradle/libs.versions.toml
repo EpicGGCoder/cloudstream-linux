@@ -7,6 +7,7 @@ jdkToolchain = "21"
 
 # Library deps (from upstream CS3)
 androidxAnnotation = "1.10.0"
+gson = "2.10.1"
 jacksonModuleKotlin = "2.13.1"
 jsoup = "1.22.1"
 ksoup = "0.2.6"
@@ -48,6 +49,7 @@ kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotl
 
 # CS3 library deps
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidxAnnotation" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jacksonModuleKotlin" }
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }

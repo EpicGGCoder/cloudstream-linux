@@ -30,6 +30,7 @@ kotlin {
 
         commonMain.dependencies {
             implementation(libs.androidx.annotation)
+            implementation(libs.gson)
             implementation(libs.jackson.module.kotlin)
             implementation(libs.jsoup)
             implementation(libs.kotlinx.atomicfu)
@@ -58,6 +59,7 @@ kotlin {
 }
 
 tasks.withType<KotlinJvmCompile> {
+    dependsOn("generateBuildKonfig")
     compilerOptions {
         jvmTarget.set(JvmTarget.fromTarget(libs.versions.jvmTarget.get()))
     }

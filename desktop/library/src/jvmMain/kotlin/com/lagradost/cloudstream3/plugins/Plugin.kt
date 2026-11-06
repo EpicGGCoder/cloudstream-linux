@@ -1,19 +1,16 @@
 package com.lagradost.cloudstream3.plugins
 
 /**
- * JVM-compatible stub for the app-level `Plugin` abstract class.
+ * JVM stub for the app-level `Plugin` abstract class.
  *
  * On Android, plugins extend `com.lagradost.cloudstream3.plugins.Plugin`
  * (defined in the `:app` module). That class extends [BasePlugin] and adds
- * Android `Context` / `Resources` plumbing.
+ * Android `Context` / `Resources` plumbing plus `openSettings` / `resources`
+ * fields that some plugins set in their constructor.
  *
- * On JVM, we provide this no-op stub in the same package so that plugins
+ * On JVM, we provide this stub in the same package so that plugins
  * compiled against Android's `Plugin` class can still be loaded via
- * [java.net.URLClassLoader]. The plugin's `load(context)` override will
- * fail (no Android Context) but its no-arg `load()` (called by BasePlugin
- * subclasses) works fine — which is all we need for provider registration.
- *
- * See ARCHITECTURE.md §2 (Plugin Loading).
+ * [java.net.URLClassLoader].
  */
 abstract class Plugin : BasePlugin() {
 
@@ -25,7 +22,20 @@ abstract class Plugin : BasePlugin() {
      */
     @Throws(Throwable::class)
     open fun load(context: Any? = null) {
-        // Fall back to the no-arg load() — most plugins use this.
         load()
     }
+
+    /**
+     * Allows plugins to register a settings callback. On Android this opens
+     * a settings Activity. On JVM desktop it's a no-op stub — the property
+     * exists so plugin bytecode that calls `setOpenSettings(...)` links.
+     *
+     * NOTE: This is a `var` property, so Kotlin generates both `getOpenSettings`
+     * and `setOpenSettings` accessors. Plugins compiled against the Android
+     * `Plugin` class expect `setOpenSettings(kotlin.jvm.functions.Function1)`.
+     */
+    var openSettings: ((context: Any?) -> Unit)? = null
+
+    /** Stub for plugin resources (Android Resources). Not used on JVM. */
+    var resources: Any? = null
 }
