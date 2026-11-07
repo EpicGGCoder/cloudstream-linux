@@ -450,8 +450,11 @@ private suspend fun loadHomeFeed(category: String = "All"): List<HomeRow> = with
                     }
                     log.info("Provider ${api.name}: ${resp.items.sumOf { it.list.size }} items")
                 }
-            } catch (e: Exception) {
-                log.warn("Provider ${api.name} home page failed: ${e.message}")
+            } catch (e: Throwable) {
+                // Catch Throwable (not just Exception) because NoClassDefFoundError
+                // is an Error, not an Exception. One failing plugin must NOT
+                // crash the entire home feed.
+                log.warn("Provider ${api.name} home page failed: ${e::class.simpleName}: ${e.message}")
             }
         }
     }
