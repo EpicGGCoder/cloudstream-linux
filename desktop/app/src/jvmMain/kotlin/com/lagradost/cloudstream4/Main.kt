@@ -92,48 +92,36 @@ fun main() = application {
     val pluginManager = remember { PluginManager(dataDir) }
     val repoManager = remember { RepositoryManager(pluginManager) }
 
-    WebViewResolverJvm.init()
-
-    // Auto-download dex-tools if not present (needed for .cs3 plugin loading)
-    // Then load saved plugins, auto-update them, and check for app updates
+    // All init happens in background — never blocks or crashes the UI
     var appUpdateInfo by remember { mutableStateOf<AppUpdateChecker.UpdateInfo?>(null) }
     var pluginUpdateCount by remember { mutableStateOf(0) }
 
     LaunchedEffect(Unit) {
-        // Step 1: Ensure dex-tools is available
-        try {
-            DexToolsManager.init(dataDir)
-        } catch (e: Exception) {
-            log.warn("DexTools init failed: ${e.message}")
-        }
+        // Step 1: WebView resolver (non-blocking, errors ignored)
+        try { WebViewResolverJvm.init() } catch (e: Exception) { log.warn("WebView init: ${e.message}") }
 
-        // Step 2: Load saved plugins
-        try {
-            pluginManager.loadAllSavedPlugins()
-        } catch (e: Exception) {
-            log.warn("Plugin loading failed: ${e.message}")
-        }
+        // Step 2: Ensure dex-tools is available
+        try { DexToolsManager.init(dataDir) } catch (e: Exception) { log.warn("DexTools init: ${e.message}") }
 
-        // Step 3: Auto-update installed plugins (non-blocking, errors ignored)
+        // Step 3: Load saved plugins
+        try { pluginManager.loadAllSavedPlugins() } catch (e: Exception) { log.warn("Plugin load: ${e.message}") }
+
+        // Step 4: Auto-update installed plugins
         try {
             val updated = repoManager.checkAndAutoUpdatePlugins { name, status ->
                 log.info("Plugin update: $name → $status")
             }
             pluginUpdateCount = updated
-        } catch (e: Exception) {
-            log.warn("Plugin auto-update failed: ${e.message}")
-        }
+        } catch (e: Exception) { log.warn("Plugin auto-update: ${e.message}") }
 
-        // Step 4: Check for app updates (non-blocking)
+        // Step 5: Check for app updates
         try {
             val update = AppUpdateChecker.checkForUpdates()
             if (update != null && update.available) {
                 appUpdateInfo = update
                 log.info("App update available: ${update.latestVersion}")
             }
-        } catch (e: Exception) {
-            log.warn("App update check failed: ${e.message}")
-        }
+        } catch (e: Exception) { log.warn("App update check: ${e.message}") }
     }
 
     val state = rememberWindowState()
@@ -150,7 +138,18 @@ fun main() = application {
                     contentColor = MaterialTheme.colorScheme.onBackground,
                 ) { padding ->
                     Box(Modifier.fillMaxSize().padding(padding)) {
-                        AppShell(pluginManager, repoManager, settings, dataStore)
+                        try {
+                            AppShell(pluginManager, repoManager, settings, dataStore)
+                        } catch (e: Exception) {
+                            log.error("UI error", e)
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Something went wrong", style = MaterialTheme.typography.titleLarge)
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(e.message ?: "Unknown error", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
 
                         // App update notification (top-right corner)
                         appUpdateInfo?.let { info ->
