@@ -335,6 +335,63 @@ fun PlayerScreen(
                 }
             }
 
+            // === INLINE PICKER PANEL — appears between video and controls ===
+            // When a picker is open, show an expanding list panel here (NOT a Dialog)
+            // because Dialogs also get hidden behind SwingPanel.
+            val activePicker = pickerOpen
+            if (activePicker != null) {
+                InlinePickerPanel(
+                    kind = activePicker,
+                    links = links,
+                    subtitles = subtitles,
+                    state = playerState,
+                    currentLink = currentLink,
+                    currentSource = currentSource,
+                    currentSubtitleIndex = currentSubtitleIndex,
+                    onSelectSource = { source ->
+                        val candidate = links
+                            .filter { it.source == source }
+                            .maxByOrNull { it.quality }
+                        if (candidate != null) {
+                            currentLink = candidate
+                            currentSource = source
+                            player.load(candidate, title, subtitles)
+                        }
+                        pickerOpen = null
+                    },
+                    onSelectLink = { link ->
+                        currentLink = link
+                        currentSource = link.source
+                        player.load(link, title, subtitles)
+                        pickerOpen = null
+                    },
+                    onSelectSubtitle = { idx ->
+                        currentSubtitleIndex = idx
+                        player.selectSubtitle(idx)
+                        pickerOpen = null
+                    },
+                    onSelectAudioTrack = { idx ->
+                        player.selectAudioTrack(idx)
+                        pickerOpen = null
+                    },
+                    onSelectHlsVariant = { idx ->
+                        player.selectHlsVariant(idx)
+                        pickerOpen = null
+                    },
+                    onSearchOnlineSubs = {
+                        pickerOpen = null
+                        scope.launch {
+                            val subApi = OpenSubtitlesApi()
+                            val results = subApi.search(title)
+                            if (results.isNotEmpty()) {
+                                subtitles = (subtitles + results).distinctBy { it.url }
+                            }
+                        }
+                    },
+                    onDismiss = { pickerOpen = null },
+                )
+            }
+
             // === BOTTOM CONTROLS — always visible, NOT behind video ===
             PlayerBottomBar(
                 state = playerState,
@@ -387,63 +444,9 @@ fun PlayerScreen(
             )
         }
 
-        // === Picker dialogs ===
-        // Rendered as Compose Dialogs (separate OS windows) so they appear
-        // ABOVE the SwingPanel video surface — DropdownMenu popups would be
-        // hidden by AWT's always-on-top painting of the video surface.
-        val activePicker = pickerOpen
-        if (activePicker != null) {
-            PickerDialogContainer(
-                kind = activePicker,
-                links = links,
-                subtitles = subtitles,
-                state = playerState,
-                currentLink = currentLink,
-                currentSource = currentSource,
-                currentSubtitleIndex = currentSubtitleIndex,
-                onSelectSource = { source ->
-                    val candidate = links
-                        .filter { it.source == source }
-                        .maxByOrNull { it.quality }
-                    if (candidate != null) {
-                        currentLink = candidate
-                        currentSource = source
-                        player.load(candidate, title, subtitles)
-                    }
-                    pickerOpen = null
-                },
-                onSelectLink = { link ->
-                    currentLink = link
-                    currentSource = link.source
-                    player.load(link, title, subtitles)
-                    pickerOpen = null
-                },
-                onSelectSubtitle = { idx ->
-                    currentSubtitleIndex = idx
-                    player.selectSubtitle(idx)
-                    pickerOpen = null
-                },
-                onSelectAudioTrack = { idx ->
-                    player.selectAudioTrack(idx)
-                    pickerOpen = null
-                },
-                onSelectHlsVariant = { idx ->
-                    player.selectHlsVariant(idx)
-                    pickerOpen = null
-                },
-                onSearchOnlineSubs = {
-                    pickerOpen = null
-                    scope.launch {
-                        val subApi = OpenSubtitlesApi()
-                        val results = subApi.search(title)
-                        if (results.isNotEmpty()) {
-                            subtitles = (subtitles + results).distinctBy { it.url }
-                        }
-                    }
-                },
-                onDismiss = { pickerOpen = null },
-            )
-        }
+        // Old Dialog-based pickers removed — now using InlinePickerPanel
+        // inside the Column (above), which renders in Compose-managed space
+        // and is NOT hidden behind SwingPanel.
     }
 }
 
@@ -800,14 +803,19 @@ private fun BottomBarChipButton(
 // the SwingPanel video surface.
 // ============================================================================
 
+// ============================================================================
+// InlinePickerPanel — renders the picker as an expanding panel INSIDE the
+// Column layout (between video and bottom controls). This is the ONLY
+// reliable way to show picker UI that isn't hidden behind SwingPanel.
+// ============================================================================
 @Composable
-private fun PickerDialogContainer(
+private fun InlinePickerPanel(
     kind: PickerKind,
     links: List<ExtractorLink>,
     subtitles: List<SubtitleFile>,
     state: VlcjPlayer.PlayerState,
     currentLink: ExtractorLink?,
-    currentSource: String?,
+    currentSource: String,
     currentSubtitleIndex: Int,
     onSelectSource: (String) -> Unit,
     onSelectLink: (ExtractorLink) -> Unit,
@@ -817,116 +825,154 @@ private fun PickerDialogContainer(
     onSearchOnlineSubs: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    when (kind) {
-        PickerKind.SOURCE -> {
-            val sources = remember(links) {
-                links.groupBy { it.source }
-                    .mapValues { (_, list) -> list.sortedByDescending { it.quality } }
-            }
-            PickerDialog(
-                title = "Source",
-                subtitle = "${sources.size} providers",
-                onDismiss = onDismiss,
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 4.dp,
+        modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp),
+    ) {
+        Column(Modifier.fillMaxWidth()) {
+            // Header
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                sources.keys.forEach { source ->
-                    val best = sources[source]?.firstOrNull()
-                    PickerRow(
-                        title = source,
-                        subtitle = best?.let { "${it.quality}p" },
-                        isSelected = source == currentSource,
-                        onClick = { onSelectSource(source) },
-                    )
-                }
-            }
-        }
-
-        PickerKind.QUALITY -> {
-            val sourceLinks = remember(links, currentSource) {
-                links.filter { it.source == currentSource }
-                    .sortedByDescending { it.quality }
-            }
-            PickerDialog(
-                title = "Quality",
-                subtitle = currentSource ?: "—",
-                onDismiss = onDismiss,
-            ) {
-                sourceLinks.forEach { link ->
-                    PickerRow(
-                        title = "${link.quality}p",
-                        subtitle = link.name.takeIf { it.isNotBlank() },
-                        isSelected = link.url == currentLink?.url,
-                        onClick = { onSelectLink(link) },
-                    )
-                }
-            }
-        }
-
-        PickerKind.SUBTITLE -> {
-            PickerDialog(
-                title = "Subtitles",
-                subtitle = "${subtitles.size} available",
-                onDismiss = onDismiss,
-            ) {
-                PickerRow(
-                    title = "Off",
-                    subtitle = null,
-                    isSelected = currentSubtitleIndex == -1,
-                    onClick = { onSelectSubtitle(-1) },
+                Text(
+                    text = when (kind) {
+                        PickerKind.SOURCE -> "Select Source"
+                        PickerKind.QUALITY -> "Select Quality"
+                        PickerKind.SUBTITLES -> "Select Subtitles"
+                        PickerKind.AUDIO -> "Select Audio Track"
+                        PickerKind.HLS_VARIANT -> "Select Stream Quality"
+                    },
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
                 )
-                subtitles.forEachIndexed { i, sub ->
-                    PickerRow(
-                        title = sub.lang,
-                        subtitle = null,
-                        isSelected = i == currentSubtitleIndex,
-                        onClick = { onSelectSubtitle(i) },
-                    )
-                }
-                PickerRow(
-                    title = "Search OpenSubtitles…",
-                    subtitle = null,
-                    icon = Icons.Filled.Search,
-                    accent = true,
-                    isSelected = false,
-                    onClick = onSearchOnlineSubs,
-                )
-            }
-        }
-
-        PickerKind.AUDIO -> {
-            PickerDialog(
-                title = "Audio Track",
-                subtitle = "${state.audioTracks.size} tracks",
-                onDismiss = onDismiss,
-            ) {
-                state.audioTracks.forEach { track ->
-                    PickerRow(
-                        title = track.description,
-                        subtitle = null,
-                        isSelected = track.index == state.currentAudioTrackIndex,
-                        onClick = { onSelectAudioTrack(track.index) },
-                    )
+                IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Filled.Close, contentDescription = "Close", modifier = Modifier.size(20.dp))
                 }
             }
-        }
 
-        PickerKind.HLS_VARIANT -> {
-            PickerDialog(
-                title = "Stream Quality",
-                subtitle = "${state.hlsVariants.size} variants",
-                onDismiss = onDismiss,
+            // Options list — scrollable
+            androidx.compose.foundation.lazy.LazyColumn(
+                modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp),
             ) {
-                state.hlsVariants.forEach { variant ->
-                    PickerRow(
-                        title = variant.resolution,
-                        subtitle = null,
-                        isSelected = variant.index == state.currentHlsVariantIndex,
-                        onClick = { onSelectHlsVariant(variant.index) },
-                    )
+                when (kind) {
+                    PickerKind.SOURCE -> {
+                        val sources = links.map { it.source }.distinct()
+                        items(sources) { source ->
+                            PickerRow(
+                                text = source,
+                                isSelected = source == currentSource,
+                                subtitle = "${links.count { it.source == source }} streams",
+                                onClick = { onSelectSource(source) },
+                            )
+                        }
+                    }
+                    PickerKind.QUALITY -> {
+                        val sourceLinks = links.filter { it.source == currentSource }
+                            .sortedByDescending { it.quality }
+                        items(sourceLinks) { link ->
+                            PickerRow(
+                                text = "${link.name} ${if (link.quality > 0) "${link.quality}p" else ""}",
+                                isSelected = link == currentLink,
+                                subtitle = link.source,
+                                onClick = { onSelectLink(link) },
+                            )
+                        }
+                    }
+                    PickerKind.SUBTITLES -> {
+                        item {
+                            PickerRow(
+                                text = "Off",
+                                isSelected = currentSubtitleIndex == -1,
+                                onClick = { onSelectSubtitle(-1) },
+                            )
+                        }
+                        items(subtitles.size) { idx ->
+                            PickerRow(
+                                text = subtitles[idx].lang,
+                                isSelected = idx == currentSubtitleIndex,
+                                onClick = { onSelectSubtitle(idx) },
+                            )
+                        }
+                        item {
+                            PickerRow(
+                                text = "Search OpenSubtitles…",
+                                isSelected = false,
+                                onClick = onSearchOnlineSubs,
+                            )
+                        }
+                    }
+                    PickerKind.AUDIO -> {
+                        if (state.audioTracks.isEmpty()) {
+                            item { PickerRow(text = "No audio tracks", isSelected = false, onClick = {}) }
+                        } else {
+                            items(state.audioTracks.size) { idx ->
+                                val track = state.audioTracks[idx]
+                                PickerRow(
+                                    text = track.description,
+                                    isSelected = idx == state.currentAudioTrackIndex,
+                                    onClick = { onSelectAudioTrack(idx) },
+                                )
+                            }
+                        }
+                    }
+                    PickerKind.HLS_VARIANT -> {
+                        if (state.hlsVariants.isEmpty()) {
+                            item { PickerRow(text = "No quality variants available", isSelected = false, onClick = {}) }
+                        } else {
+                            items(state.hlsVariants.size) { idx ->
+                                val variant = state.hlsVariants[idx]
+                                PickerRow(
+                                    text = variant.resolution,
+                                    isSelected = idx == state.currentHlsVariantIndex,
+                                    onClick = { onSelectHlsVariant(idx) },
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
+
+@Composable
+private fun PickerRow(
+    text: String,
+    isSelected: Boolean,
+    subtitle: String? = null,
+    onClick: () -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (isSelected) {
+            Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
 
 @Composable
 private fun PickerDialog(
