@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AudioFile
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Fullscreen
@@ -86,7 +87,7 @@ private val log = LoggerFactory.getLogger("PlayerScreen")
 
 /** Which picker dialog (if any) is currently open. Rendered as a Compose Dialog
  *  so it appears ABOVE the SwingPanel video surface. */
-private enum class PickerKind { SOURCE, QUALITY, SUBTITLE, AUDIO, HLS_VARIANT }
+private enum class PickerKind { SOURCE, QUALITY, SUBTITLES, AUDIO, HLS_VARIANT }
 
 /**
  * Full-screen vlcj-backed player overlay.
@@ -123,7 +124,7 @@ fun PlayerScreen(
     var currentLink by remember { mutableStateOf<ExtractorLink?>(null) }
     // The currently selected source (ExtractorLink.source). Used to group
     // links into Source vs Quality pickers.
-    var currentSource by remember { mutableStateOf<String?>(null) }
+    var currentSource by remember { mutableStateOf("") }
     var currentSubtitleIndex by remember { mutableStateOf(-1) }
     var pickerOpen by remember { mutableStateOf<PickerKind?>(null) }
     var isFullscreen by remember { mutableStateOf(false) }
@@ -134,7 +135,7 @@ fun PlayerScreen(
         links = emptyList()
         subtitles = emptyList()
         currentLink = null
-        currentSource = null
+        currentSource = ""
         currentSubtitleIndex = -1
         try {
             val collectedLinks = mutableListOf<ExtractorLink>()
@@ -706,7 +707,7 @@ private fun PlayerBottomBar(
                     subtitles[currentSubtitleIndex].lang
                 } else "Off",
                 icon = Icons.Filled.Subtitles,
-                onClick = { onOpenPicker(PickerKind.SUBTITLE) },
+                onClick = { onOpenPicker(PickerKind.SUBTITLES) },
             )
             Spacer(Modifier.width(8.dp))
 
@@ -854,13 +855,16 @@ private fun InlinePickerPanel(
             }
 
             // Options list — scrollable
+            val scrollState = androidx.compose.foundation.lazy.rememberLazyListState()
             androidx.compose.foundation.lazy.LazyColumn(
                 modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp),
+                state = scrollState,
             ) {
                 when (kind) {
                     PickerKind.SOURCE -> {
                         val sources = links.map { it.source }.distinct()
-                        items(sources) { source ->
+                        items(sources.size) { idx ->
+                            val source = sources[idx]
                             PickerRow(
                                 text = source,
                                 isSelected = source == currentSource,
@@ -872,7 +876,8 @@ private fun InlinePickerPanel(
                     PickerKind.QUALITY -> {
                         val sourceLinks = links.filter { it.source == currentSource }
                             .sortedByDescending { it.quality }
-                        items(sourceLinks) { link ->
+                        items(sourceLinks.size) { idx ->
+                            val link = sourceLinks[idx]
                             PickerRow(
                                 text = "${link.name} ${if (link.quality > 0) "${link.quality}p" else ""}",
                                 isSelected = link == currentLink,
