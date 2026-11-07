@@ -192,70 +192,39 @@ fun PlayerScreen(
                 )
             }
 
-            // Auto-hide controls.
-            var lastInteraction by remember { mutableStateOf(System.currentTimeMillis()) }
-            var controlsVisible by remember { mutableStateOf(true) }
-            LaunchedEffect(Unit) {
-                while (true) {
-                    delay(500)
-                    val elapsed = System.currentTimeMillis() - lastInteraction
-                    val shouldShow = elapsed < 3000 || !playerState.isPlaying
-                    if (shouldShow != controlsVisible) controlsVisible = shouldShow
-                }
-            }
-            // Track mouse movement to refresh lastInteraction.
-            Box(
+            // Controls are ALWAYS visible (no auto-hide) — desktop users expect persistent controls
+            // Title bar — always visible with close button
+            Row(
                 Modifier
-                    .fillMaxSize()
-                    .clickable(
-                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                        indication = null,
-                    ) {
-                        lastInteraction = System.currentTimeMillis()
-                        controlsVisible = true
-                    },
-            )
-
-            // Title bar.
-            AnimatedVisibility(
-                visible = controlsVisible,
-                enter = fadeIn(),
-                exit = fadeOut(),
-                modifier = Modifier.align(Alignment.TopCenter),
-            ) {
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color.Black.copy(alpha = 0.85f),
-                                    Color.Transparent,
-                                ),
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.Black.copy(alpha = 0.85f),
+                                Color.Transparent,
                             ),
-                        )
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconButton(onClick = onClose) {
-                        Icon(Icons.Filled.Close, contentDescription = "Close", tint = Color.White)
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = Color.White,
+                        ),
                     )
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(
+                    onClick = onClose,
+                    modifier = Modifier.size(44.dp),
+                ) {
+                    Icon(Icons.Filled.Close, contentDescription = "Close", tint = Color.White, modifier = Modifier.size(28.dp))
                 }
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color.White,
+                )
             }
 
-            // Bottom controls.
-            AnimatedVisibility(
-                visible = controlsVisible,
-                enter = fadeIn(),
-                exit = fadeOut(),
-                modifier = Modifier.align(Alignment.BottomCenter),
-            ) {
+            // Bottom controls — always visible, positioned at bottom
+            Box(Modifier.align(Alignment.BottomCenter)) {
                 PlayerBottomBar(
                     state = playerState,
                     links = links,

@@ -73,14 +73,40 @@ fun HomeScreen(
     var loading by remember { mutableStateOf(true) }
     var rows by remember { mutableStateOf<List<HomeRow>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
+    var selectedCategory by remember { mutableStateOf("All") }
 
-    // Reload when provider count changes (e.g. user installs a plugin).
-    val providerCount = pluginManager.installed.value.size
-    LaunchedEffect(providerCount) {
+    // Track actual LOADED providers (not just installed) — this changes when
+    // plugins are loaded on startup or when user installs new ones
+    val providerCount = com.lagradost.cloudstream3.APIHolder.allProviders.size
+
+    // Poll for provider count changes (plugins load async on startup)
+    LaunchedEffect(Unit) {
+        var lastCount = 0
+        while (true) {
+            delay(2000)
+            val currentCount = com.lagradost.cloudstream3.APIHolder.allProviders.size
+            if (currentCount != lastCount) {
+                lastCount = currentCount
+                loading = true
+                error = null
+                try {
+                    rows = withContext(Dispatchers.IO) { loadHomeFeed(selectedCategory) }
+                } catch (e: Exception) {
+                    log.error("Home feed failed", e)
+                    error = e.message ?: e::class.simpleName
+                }
+                loading = false
+            }
+        }
+    }
+
+    // Also reload when user installs a plugin
+    val installedCount = pluginManager.installed.value.size
+    LaunchedEffect(installedCount, selectedCategory) {
         loading = true
         error = null
         try {
-            rows = withContext(Dispatchers.IO) { loadHomeFeed() }
+            rows = withContext(Dispatchers.IO) { loadHomeFeed(selectedCategory) }
         } catch (e: Exception) {
             log.error("Home feed failed", e)
             error = e.message ?: e::class.simpleName
@@ -102,7 +128,13 @@ fun HomeScreen(
                 OutlinedButton(onClick = onGoToPlugins) { Text("Open Plugins") }
             },
         )
-        else -> HomeContent(rows = rows, onOpenDetail = onOpenDetail)
+        else -> HomeContent(
+            rows = rows,
+            onOpenDetail = onOpenDetail,
+            selectedCategory = selectedCategory,
+            onCategoryChange = { selectedCategory = it },
+            providerCount = providerCount,
+        )
     }
 }
 
@@ -110,6 +142,9 @@ fun HomeScreen(
 private fun HomeContent(
     rows: List<HomeRow>,
     onOpenDetail: (SearchResponse) -> Unit,
+    selectedCategory: String,
+    onCategoryChange: (String) -> Unit,
+    providerCount: Int,
 ) {
     val heroItems = remember(rows) {
         rows.firstOrNull()?.items?.take(5) ?: emptyList()
@@ -118,6 +153,16 @@ private fun HomeContent(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 32.dp),
     ) {
+        // Category filter bar
+        item(key = "categories") {
+            CategoryFilterBar(
+                selected = selectedCategory,
+                onSelect = onCategoryChange,
+                providerCount = providerCount,
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+
         if (heroItems.isNotEmpty()) {
             item(key = "hero") {
                 HeroCarousel(items = heroItems, onOpenDetail = onOpenDetail)
@@ -317,12 +362,25 @@ private data class HomeRow(
     val id: String get() = "$providerName::$title"
 }
 
-private suspend fun loadHomeFeed(): List<HomeRow> = withContext(Dispatchers.IO) {
+private suspend fun loadHomeFeed(category: String = "All"): List<HomeRow> = withContext(Dispatchers.IO) {
     val rows = mutableListOf<HomeRow>()
-    // Take a snapshot under the atomic list's lock to avoid CME.
     val providers = APIHolder.allProviders.withLock { APIHolder.allProviders.toList() }
         .filter { it.hasMainPage }
-    log.info("Loading home feed from ${providers.size} providers")
+        .filter { api ->
+            if (category == "All") true
+            else api.supportedTypes.any { type ->
+                val typeName = type.name
+                when (category) {
+                    "Movies" -> typeName == "Movie" || typeName == "AnimeMovie" || typeName == "Torrent"
+                    "TV Shows" -> typeName == "TvSeries" || typeName == "Cartoon" || typeName == "Documentary"
+                    "Anime" -> typeName == "Anime" || typeName == "OVA"
+                    "Sports" -> typeName == "Live"
+                    "Asian Drama" -> typeName == "AsianDrama"
+                    else -> true
+                }
+            }
+        }
+    log.info("Loading home feed from ${providers.size} providers (category: $category)")
     for (api in providers) {
         for (section in api.mainPage) {
             try {
@@ -344,4 +402,39 @@ private suspend fun loadHomeFeed(): List<HomeRow> = withContext(Dispatchers.IO) 
         }
     }
     rows
+}
+
+@Composable
+private fun CategoryFilterBar(
+    selected: String,
+    onSelect: (String) -> Unit,
+    providerCount: Int,
+) {
+    val categories = listOf("All", "Movies", "TV Shows", "Anime", "Sports", "Asian Drama")
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        item {
+            Text(
+                text = "$providerCount providers",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(end = 4.dp, top = 8.dp),
+            )
+        }
+        items(categories) { category ->
+            val isSelected = category == selected
+            androidx.compose.material3.FilterChip(
+                selected = isSelected,
+                onClick = { onSelect(category) },
+                label = { Text(category, style = MaterialTheme.typography.labelMedium) },
+                colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+            )
+        }
+    }
 }
