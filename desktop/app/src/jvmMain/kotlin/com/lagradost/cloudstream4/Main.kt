@@ -100,20 +100,39 @@ fun main() = application {
     var pluginUpdateCount by remember { mutableStateOf(0) }
 
     LaunchedEffect(Unit) {
-        DexToolsManager.init(dataDir)
-        pluginManager.loadAllSavedPlugins()
-
-        // Auto-update installed plugins (like CS3 does on app open)
-        val updated = repoManager.checkAndAutoUpdatePlugins { name, status ->
-            log.info("Plugin update: $name → $status")
+        // Step 1: Ensure dex-tools is available
+        try {
+            DexToolsManager.init(dataDir)
+        } catch (e: Exception) {
+            log.warn("DexTools init failed: ${e.message}")
         }
-        pluginUpdateCount = updated
 
-        // Check for app updates from GitHub
-        val update = AppUpdateChecker.checkForUpdates()
-        if (update != null && update.available) {
-            appUpdateInfo = update
-            log.info("App update available: ${update.latestVersion}")
+        // Step 2: Load saved plugins
+        try {
+            pluginManager.loadAllSavedPlugins()
+        } catch (e: Exception) {
+            log.warn("Plugin loading failed: ${e.message}")
+        }
+
+        // Step 3: Auto-update installed plugins (non-blocking, errors ignored)
+        try {
+            val updated = repoManager.checkAndAutoUpdatePlugins { name, status ->
+                log.info("Plugin update: $name → $status")
+            }
+            pluginUpdateCount = updated
+        } catch (e: Exception) {
+            log.warn("Plugin auto-update failed: ${e.message}")
+        }
+
+        // Step 4: Check for app updates (non-blocking)
+        try {
+            val update = AppUpdateChecker.checkForUpdates()
+            if (update != null && update.available) {
+                appUpdateInfo = update
+                log.info("App update available: ${update.latestVersion}")
+            }
+        } catch (e: Exception) {
+            log.warn("App update check failed: ${e.message}")
         }
     }
 

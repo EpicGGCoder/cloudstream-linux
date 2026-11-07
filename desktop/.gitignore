@@ -1,52 +1,16 @@
-# Gradle
 .gradle/
 build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-# Kotlin
-*.kotlin_metadata
-*.kotlin_builtins
-
-# IDE
-.idea/
-*.iml
-*.ipr
-*.iws
-.vscode/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Build artifacts
 *.jar
 !gradle/wrapper/gradle-wrapper.jar
 *.class
-
-# dex2jar tools (downloaded by scripts/fetch-dex-tools.sh)
 app/resources/dex-tools/
-
-# Test plugin binaries (downloaded by scripts/bulk-download-*.sh)
 test-plugins/
 test-plugins-multi/
-
-# Runtime data
-~/.cloudstream/
-
-# Logs
-*.log
-dev.log
-
-# OS
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
-
-# Build artifacts (don't commit these!)
-app/build/
 library/build/
 shared/build/
-app/resources/dex-tools/
+app/build/
+.idea/
+*.iml
+*.log
+dev.log
+.DS_Store
