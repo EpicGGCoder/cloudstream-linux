@@ -71,6 +71,9 @@ fun SearchScreen(
     var loading by remember { mutableStateOf(false) }
     var results by remember { mutableStateOf<List<ProviderResults>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
+    // Track whether we've completed at least one search so we can distinguish
+    // the "no results yet" placeholder from a real "No results" empty state.
+    var hasSearched by remember { mutableStateOf(false) }
 
     // Debounced search — LaunchedEffect re-runs (and cancels prior) every time query changes.
     LaunchedEffect(query) {
@@ -78,6 +81,7 @@ fun SearchScreen(
             results = emptyList()
             loading = false
             error = null
+            hasSearched = false
             return@LaunchedEffect
         }
         delay(400)
@@ -86,6 +90,7 @@ fun SearchScreen(
         try {
             val rs = withContext(Dispatchers.IO) { runSearch(query) }
             results = rs
+            hasSearched = true
             // Persist into history (most recent first, deduped, capped at 10).
             settings.update { data ->
                 val updated = (listOf(query) + data.searchHistory.filter { it != query }).take(10)
@@ -94,6 +99,7 @@ fun SearchScreen(
         } catch (e: Exception) {
             log.error("Search failed", e)
             error = e.message ?: e::class.simpleName
+            hasSearched = true
         }
         loading = false
     }
@@ -144,9 +150,16 @@ fun SearchScreen(
                 body = error!!,
                 onRetry = { loading = true },
             )
-            results.isEmpty() -> EmptyState(
+            // After search completes with 0 results → show "No results".
+            hasSearched && results.isEmpty() -> EmptyState(
                 title = "No results",
                 body = "Try a different title or install more plugins for wider coverage.",
+            )
+            // Before the search completes (and hasn't started yet) → show a
+            // friendly placeholder instead of "No results".
+            !hasSearched -> EmptyState(
+                title = "Start typing to search…",
+                body = "Results will appear here as you type.",
             )
             else -> SearchResultsList(results = results, onOpenDetail = onOpenDetail)
         }

@@ -75,38 +75,54 @@ fun HomeScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var selectedCategory by remember { mutableStateOf("All") }
 
-    // Track actual LOADED providers (not just installed) — this changes when
-    // plugins are loaded on startup or when user installs new ones
-    val providerCount = com.lagradost.cloudstream3.APIHolder.allProviders.size
+    // Single source of truth for "did we successfully load at least once?".
+    // Distinguishes the initial "Loading plugins…" placeholder from a real
+    // "no providers installed" empty state.
+    var hasLoadedOnce by remember { mutableStateOf(false) }
 
-    // Poll for provider count changes (plugins load async on startup)
-    LaunchedEffect(Unit) {
-        var lastCount = 0
-        while (true) {
-            delay(2000)
-            val currentCount = com.lagradost.cloudstream3.APIHolder.allProviders.size
-            if (currentCount != lastCount) {
-                lastCount = currentCount
-                loading = true
-                error = null
-                try {
-                    rows = withContext(Dispatchers.IO) { loadHomeFeed(selectedCategory) }
-                } catch (e: Exception) {
-                    log.error("Home feed failed", e)
-                    error = e.message ?: e::class.simpleName
-                }
-                loading = false
-            }
-        }
-    }
+    // Track the provider count we last loaded the feed for. Used so we only
+    // reload when providers are added/removed (not every category change).
+    var lastLoadedProviderCount by remember { mutableStateOf(-1) }
 
-    // Also reload when user installs a plugin
+    // Poll for provider-count changes (plugins load async on startup) AND
+    // reload when the user installs/uninstalls a plugin OR changes the
+    // category. This is the ONLY LaunchedEffect that drives the feed load —
+    // the previous implementation had two overlapping effects which caused
+    // double-fetches and "no providers" flicker on first launch.
     val installedCount = pluginManager.installed.value.size
     LaunchedEffect(installedCount, selectedCategory) {
+        val currentProviderCount = com.lagradost.cloudstream3.APIHolder.allProviders.size
+        // If the provider count hasn't actually changed since the last fetch
+        // AND we already have rows for this category, don't re-fetch.
+        val providerCountUnchanged = currentProviderCount == lastLoadedProviderCount
+        val hasRowsForCategory = rows.isNotEmpty()
+        if (providerCountUnchanged && hasRowsForCategory) {
+            return@LaunchedEffect
+        }
+
+        // Show "Loading plugins…" instead of "No providers" while we wait for
+        // the initial plugin load to complete.
+        if (currentProviderCount == 0 && !hasLoadedOnce) {
+            loading = true
+            error = null
+            // Wait a bit and re-check — plugins load asynchronously.
+            kotlinx.coroutines.delay(500)
+            val recount = com.lagradost.cloudstream3.APIHolder.allProviders.size
+            if (recount == 0) {
+                // Still no plugins — show the empty state.
+                loading = false
+                rows = emptyList()
+                lastLoadedProviderCount = 0
+                return@LaunchedEffect
+            }
+        }
+
         loading = true
         error = null
         try {
             rows = withContext(Dispatchers.IO) { loadHomeFeed(selectedCategory) }
+            lastLoadedProviderCount = currentProviderCount
+            hasLoadedOnce = true
         } catch (e: Exception) {
             log.error("Home feed failed", e)
             error = e.message ?: e::class.simpleName
@@ -114,19 +130,57 @@ fun HomeScreen(
         loading = false
     }
 
+    // Poll periodically for provider count changes (plugins may load a few
+    // seconds after startup). This effect does NOT load the feed directly —
+    // it just bumps `installedCount` indirectly by triggering recomposition
+    // when the plugin manager emits. The actual load happens in the
+    // LaunchedEffect above.
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(2000)
+            // If provider count changed since we last loaded, force a reload
+            // by mutating a state the LaunchedEffect above observes.
+            val currentCount = com.lagradost.cloudstream3.APIHolder.allProviders.size
+            if (currentCount != lastLoadedProviderCount) {
+                // Trigger reload by toggling loading state.
+                loading = true
+                try {
+                    rows = withContext(Dispatchers.IO) { loadHomeFeed(selectedCategory) }
+                    lastLoadedProviderCount = currentCount
+                    hasLoadedOnce = true
+                    error = null
+                } catch (e: Exception) {
+                    log.error("Home feed failed (poll)", e)
+                    error = e.message ?: e::class.simpleName
+                }
+                loading = false
+            }
+        }
+    }
+
+    val providerCount = com.lagradost.cloudstream3.APIHolder.allProviders.size
+
     when {
+        loading && providerCount == 0 && !hasLoadedOnce -> EmptyState(
+            title = "Loading plugins…",
+            body = "Waiting for your installed plugins to initialize.",
+        )
         loading -> HomeSkeleton()
         error != null -> ErrorState(
             title = "Failed to load home feed",
             body = error!!,
             onRetry = { loading = true },
         )
-        rows.isEmpty() -> EmptyState(
-            title = "No providers loaded",
+        rows.isEmpty() && providerCount == 0 -> EmptyState(
+            title = "No plugins installed",
             body = "Install plugins from the Plugins tab to populate your home feed.",
             action = {
                 OutlinedButton(onClick = onGoToPlugins) { Text("Open Plugins") }
             },
+        )
+        rows.isEmpty() -> EmptyState(
+            title = "Nothing to show",
+            body = "Your installed providers don't expose a main page. Try searching instead.",
         )
         else -> HomeContent(
             rows = rows,

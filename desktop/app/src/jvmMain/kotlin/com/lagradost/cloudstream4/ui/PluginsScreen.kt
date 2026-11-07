@@ -51,8 +51,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.lagradost.cloudstream4.plugin.PluginManager
 import com.lagradost.cloudstream4.repo.RepositoryManager
 import kotlinx.coroutines.launch
@@ -486,6 +489,14 @@ private fun FetchedPluginCard(
             Modifier.padding(14.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Plugin logo — fall back to the Extension icon when iconUrl is
+            // missing or fails to load (most plugins don't ship an icon).
+            PluginIcon(
+                iconUrl = plugin.iconUrl,
+                fallbackIcon = Icons.Filled.Extension,
+                modifier = Modifier.size(36.dp).clip(RoundedCornerShape(8.dp)),
+            )
+            Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(
                     text = plugin.name,
@@ -497,7 +508,7 @@ private fun FetchedPluginCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             when (installState) {
@@ -534,6 +545,40 @@ private fun FetchedPluginCard(
                     Text("Retry")
                 }
             }
+        }
+    }
+}
+
+/**
+ * Renders a plugin logo. When [iconUrl] is non-null and points to a reachable
+ * image, [AsyncImage] loads it. Otherwise we fall back to a Material icon
+ * inside a tinted box so the card still has a recognizable icon.
+ */
+@Composable
+private fun PluginIcon(
+    iconUrl: String?,
+    fallbackIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (!iconUrl.isNullOrEmpty()) {
+            AsyncImage(
+                model = iconUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize().padding(6.dp),
+            )
+        } else {
+            Icon(
+                fallbackIcon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
         }
     }
 }

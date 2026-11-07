@@ -173,9 +173,17 @@ class VlcjPlayer(
     }
 
     fun setVolume(vol: Int) {
-        val clamped = vol.coerceIn(0, 150)
+        // Allow boost up to 300% (libvlc internally supports up to 200 cleanly,
+        // higher values amplify via software and may distort, but are useful
+        // for quiet sources).
+        val clamped = vol.coerceIn(0, MAX_VOLUME)
         component.mediaPlayer().audio().setVolume(clamped)
         _state.value = _state.value.copy(volume = clamped)
+    }
+
+    companion object {
+        /** Maximum allowed volume (0-300). 100 = original volume. */
+        const val MAX_VOLUME: Int = 300
     }
 
     fun setRate(rate: Float) {
@@ -196,9 +204,10 @@ class VlcjPlayer(
             val descriptions = component.mediaPlayer().audio().trackDescriptions()
             if (descriptions != null && descriptions.isNotEmpty()) {
                 val tracks = descriptions.mapIndexed { i, desc ->
+                    val rawDesc = desc?.description()?.trim().orEmpty()
                     AudioTrack(
                         id = desc?.id()?.toString() ?: i.toString(),
-                        description = desc?.description() ?: "Track ${i + 1}",
+                        description = formatAudioTrackName(rawDesc, i),
                         index = i,
                     )
                 }
@@ -212,6 +221,23 @@ class VlcjPlayer(
         } catch (e: Exception) {
             log.debug("Failed to get audio tracks: ${e.message}")
         }
+    }
+
+    /**
+     * Convert vlcj's raw audio track description into a user-friendly label.
+     * libvlc usually returns the language name (e.g. "English", "Japanese"),
+     * but sometimes returns "Track N" or an empty string. Fall back to
+     * "Audio N" so the picker always shows something sensible.
+     */
+    private fun formatAudioTrackName(raw: String, index: Int): String {
+        if (raw.isEmpty()) return "Audio ${index + 1}"
+        // libvlc uses "Track N" as a placeholder when it can't detect language
+        if (raw.equals("Track", ignoreCase = true) ||
+            raw.matches(Regex("^Track\\s*\\d+$", RegexOption.IGNORE_CASE))
+        ) {
+            return "Audio ${index + 1}"
+        }
+        return raw
     }
 
     /**

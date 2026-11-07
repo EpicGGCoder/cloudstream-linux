@@ -1,30 +1,31 @@
 package com.lagradost.cloudstream4.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AudioFile
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -32,8 +33,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -55,9 +54,17 @@ import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -66,13 +73,20 @@ import com.lagradost.cloudstream4.data.DataStoreHelper
 import com.lagradost.cloudstream4.player.VlcjPlayer
 import com.lagradost.cloudstream4.subtitles.OpenSubtitlesApi
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import java.awt.Component
+import java.awt.Frame
+import java.awt.event.KeyEvent as AwtKeyEvent
+import java.awt.event.KeyListener
+import javax.swing.SwingUtilities
 
 private val log = LoggerFactory.getLogger("PlayerScreen")
+
+/** Which picker dialog (if any) is currently open. Rendered as a Compose Dialog
+ *  so it appears ABOVE the SwingPanel video surface. */
+private enum class PickerKind { SOURCE, QUALITY, SUBTITLE, AUDIO, HLS_VARIANT }
 
 /**
  * Full-screen vlcj-backed player overlay.
@@ -82,7 +96,13 @@ private val log = LoggerFactory.getLogger("PlayerScreen")
  *   2. Collect [ExtractorLink]s and [SubtitleFile]s via the callbacks.
  *   3. Pick the highest-quality non-torrent link and play it via vlcj.
  *   4. Auto-hide title + bottom controls after 3s of no mouse activity.
- *   5. Source/subtitle pickers swap the playback live.
+ *   5. Source/Quality/Subtitle/Audio pickers swap the playback live.
+ *
+ * Dropdown menus are rendered as Compose [Dialog]s rather than [DropdownMenu]
+ * because AWT/Swing components always paint ABOVE Skia content — meaning
+ * DropdownMenu popups would be hidden behind the [SwingPanel] that hosts the
+ * vlcj video surface. Dialogs render as separate OS windows and are not
+ * subject to that limitation.
  */
 @Composable
 fun PlayerScreen(
@@ -101,7 +121,12 @@ fun PlayerScreen(
     var loadState by remember { mutableStateOf(LoadState.LOADING) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     var currentLink by remember { mutableStateOf<ExtractorLink?>(null) }
+    // The currently selected source (ExtractorLink.source). Used to group
+    // links into Source vs Quality pickers.
+    var currentSource by remember { mutableStateOf<String?>(null) }
     var currentSubtitleIndex by remember { mutableStateOf(-1) }
+    var pickerOpen by remember { mutableStateOf<PickerKind?>(null) }
+    var isFullscreen by remember { mutableStateOf(false) }
 
     LaunchedEffect(data, api.name) {
         loadState = LoadState.LOADING
@@ -109,6 +134,7 @@ fun PlayerScreen(
         links = emptyList()
         subtitles = emptyList()
         currentLink = null
+        currentSource = null
         currentSubtitleIndex = -1
         try {
             val collectedLinks = mutableListOf<ExtractorLink>()
@@ -141,6 +167,7 @@ fun PlayerScreen(
             links = playable
             subtitles = collectedSubs
             currentLink = playable.first()
+            currentSource = playable.first().source
             loadState = LoadState.PLAYING
             player.load(playable.first(), title, collectedSubs)
         } catch (e: Exception) {
@@ -150,13 +177,46 @@ fun PlayerScreen(
         }
     }
 
+    val playerState by player.state.collectAsState()
+
+    // === Keyboard handler =====================================================
+    //
+    // We register an AWT KeyListener directly on the vlcj surface so keys are
+    // captured even when the SwingPanel has focus (the usual case once the
+    // user clicks the video). We also add a Compose onPreviewKeyEvent so keys
+    // work when focus is on a Compose control (e.g. immediately after the
+    // source picker closes).
+    //
+    // Both call into the same handler which reads live player state via
+    // `player.state.value` so it always sees the latest values.
+    val keyHandler = remember(player) {
+        PlayerKeyHandler(
+            player = player,
+            isFullscreen = { isFullscreen },
+            onClose = onClose,
+            onToggleFullscreen = {
+                toggleFullscreen(player.surface) { newState -> isFullscreen = newState }
+            },
+        )
+    }
+
     DisposableEffect(Unit) {
+        val surface = player.surface
+        val listener = object : KeyListener {
+            override fun keyTyped(e: AwtKeyEvent) {}
+            override fun keyPressed(e: AwtKeyEvent) {
+                keyHandler.onPressed(e.keyCode, e.isShiftDown)
+            }
+            override fun keyReleased(e: AwtKeyEvent) {
+                keyHandler.onReleased(e.keyCode)
+            }
+        }
+        surface.addKeyListener(listener)
         onDispose {
+            surface.removeKeyListener(listener)
             player.release()
         }
     }
-
-    val playerState by player.state.collectAsState()
 
     // Save watch progress every 5 seconds while playing (for "Continue Watching").
     if (dataStore != null) {
@@ -182,33 +242,44 @@ fun PlayerScreen(
         }
     }
 
-    Surface(color = Color.Black, modifier = Modifier.fillMaxSize()) {
-        // Use Column layout — SwingPanel renders ON TOP of Compose content,
-        // so we MUST put controls in separate areas NOT covered by the video.
+    Surface(color = Color.Black, modifier = Modifier
+        .fillMaxSize()
+        .onPreviewKeyEvent { event ->
+            // Only handle KeyDown events so autorepeat doesn't double-trigger
+            // for keys like Space.
+            if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+            val keyCode = composeKeyToAwt(event.key) ?: return@onPreviewKeyEvent false
+            keyHandler.onPressed(keyCode, isShift = false)
+            true
+        },
+    ) {
         Column(Modifier.fillMaxSize()) {
             // === TOP BAR — title + close button (not behind video) ===
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFF111111))
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(
-                    onClick = onClose,
-                    modifier = Modifier.size(44.dp),
+            // Hidden when fullscreen so the video truly takes the whole screen.
+            if (!isFullscreen) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF111111))
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Filled.Close, contentDescription = "Close", tint = Color.White, modifier = Modifier.size(28.dp))
+                    IconButton(
+                        onClick = onClose,
+                        modifier = Modifier.size(44.dp),
+                    ) {
+                        Icon(Icons.Filled.Close, contentDescription = "Close", tint = Color.White, modifier = Modifier.size(28.dp))
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
             }
 
             // === VIDEO AREA — fills available space ===
@@ -270,7 +341,9 @@ fun PlayerScreen(
                 links = links,
                 subtitles = subtitles,
                 currentLink = currentLink,
+                currentSource = currentSource,
                 currentSubtitleIndex = currentSubtitleIndex,
+                isFullscreen = isFullscreen,
                 onSeek = { player.seekTo(it.toLong()) },
                 onPlayPause = {
                     if (playerState.isPlaying) player.pause() else player.play()
@@ -278,7 +351,19 @@ fun PlayerScreen(
                 onVolume = { player.setVolume(it.toInt()) },
                 onSelectLink = { link ->
                     currentLink = link
+                    currentSource = link.source
                     player.load(link, title, subtitles)
+                },
+                onSelectSource = { source ->
+                    // Pick the best-quality link within this source.
+                    val candidate = links
+                        .filter { it.source == source }
+                        .maxByOrNull { it.quality }
+                    if (candidate != null) {
+                        currentLink = candidate
+                        currentSource = source
+                        player.load(candidate, title, subtitles)
+                    }
                 },
                 onSelectSubtitle = { idx ->
                     currentSubtitleIndex = idx
@@ -295,10 +380,202 @@ fun PlayerScreen(
                 },
                 onSelectAudioTrack = { idx -> player.selectAudioTrack(idx) },
                 onSelectHlsVariant = { idx -> player.selectHlsVariant(idx) },
+                onToggleFullscreen = {
+                    toggleFullscreen(player.surface) { newState -> isFullscreen = newState }
+                },
+                onOpenPicker = { pickerOpen = it },
+            )
+        }
+
+        // === Picker dialogs ===
+        // Rendered as Compose Dialogs (separate OS windows) so they appear
+        // ABOVE the SwingPanel video surface — DropdownMenu popups would be
+        // hidden by AWT's always-on-top painting of the video surface.
+        val activePicker = pickerOpen
+        if (activePicker != null) {
+            PickerDialogContainer(
+                kind = activePicker,
+                links = links,
+                subtitles = subtitles,
+                state = playerState,
+                currentLink = currentLink,
+                currentSource = currentSource,
+                currentSubtitleIndex = currentSubtitleIndex,
+                onSelectSource = { source ->
+                    val candidate = links
+                        .filter { it.source == source }
+                        .maxByOrNull { it.quality }
+                    if (candidate != null) {
+                        currentLink = candidate
+                        currentSource = source
+                        player.load(candidate, title, subtitles)
+                    }
+                    pickerOpen = null
+                },
+                onSelectLink = { link ->
+                    currentLink = link
+                    currentSource = link.source
+                    player.load(link, title, subtitles)
+                    pickerOpen = null
+                },
+                onSelectSubtitle = { idx ->
+                    currentSubtitleIndex = idx
+                    player.selectSubtitle(idx)
+                    pickerOpen = null
+                },
+                onSelectAudioTrack = { idx ->
+                    player.selectAudioTrack(idx)
+                    pickerOpen = null
+                },
+                onSelectHlsVariant = { idx ->
+                    player.selectHlsVariant(idx)
+                    pickerOpen = null
+                },
+                onSearchOnlineSubs = {
+                    pickerOpen = null
+                    scope.launch {
+                        val subApi = OpenSubtitlesApi()
+                        val results = subApi.search(title)
+                        if (results.isNotEmpty()) {
+                            subtitles = (subtitles + results).distinctBy { it.url }
+                        }
+                    }
+                },
+                onDismiss = { pickerOpen = null },
             )
         }
     }
 }
+
+// ============================================================================
+// PlayerKeyHandler — encapsulates keyboard logic so it can be invoked from
+// both the AWT KeyListener (when SwingPanel has focus) and Compose's
+// onPreviewKeyEvent (when a Compose control has focus).
+// ============================================================================
+
+private class PlayerKeyHandler(
+    private val player: VlcjPlayer,
+    private val isFullscreen: () -> Boolean,
+    private val onClose: () -> Unit,
+    private val onToggleFullscreen: () -> Unit,
+) {
+    // Acceleration state for left/right seek keys
+    private var seekAccel: Int = 1
+    private var lastSeekKey: Int = 0
+    private var lastSeekTimeMs: Long = 0L
+
+    fun onPressed(keyCode: Int, isShift: Boolean) {
+        val state = player.state.value
+        when (keyCode) {
+            AwtKeyEvent.VK_LEFT, AwtKeyEvent.VK_RIGHT -> {
+                val now = System.currentTimeMillis()
+                // If the same direction key was pressed within 400ms, accelerate.
+                if (lastSeekKey == keyCode && (now - lastSeekTimeMs) < 400) {
+                    seekAccel = (seekAccel * 2).coerceAtMost(16)
+                } else {
+                    seekAccel = 1
+                }
+                lastSeekKey = keyCode
+                lastSeekTimeMs = now
+                val baseSeekMs = 5_000L
+                val seekBy = baseSeekMs * seekAccel *
+                    if (keyCode == AwtKeyEvent.VK_LEFT) -1 else 1
+                val target = (state.positionMs + seekBy)
+                    .coerceIn(0L, state.durationMs.coerceAtLeast(0L))
+                player.seekTo(target)
+            }
+            AwtKeyEvent.VK_UP -> {
+                // Shift = bigger step (e.g. for fine volume control)
+                val step = if (isShift) 25 else 10
+                val newVol = (state.volume + step).coerceAtMost(VlcjPlayer.MAX_VOLUME)
+                player.setVolume(newVol)
+            }
+            AwtKeyEvent.VK_DOWN -> {
+                val step = if (isShift) 25 else 10
+                val newVol = (state.volume - step).coerceAtLeast(0)
+                player.setVolume(newVol)
+            }
+            AwtKeyEvent.VK_SPACE, AwtKeyEvent.VK_P -> {
+                if (state.isPlaying) player.pause() else player.play()
+            }
+            AwtKeyEvent.VK_F -> {
+                onToggleFullscreen()
+            }
+            AwtKeyEvent.VK_ESCAPE -> {
+                // If fullscreen, exit fullscreen; otherwise close the player.
+                if (isFullscreen()) {
+                    onToggleFullscreen()
+                } else {
+                    onClose()
+                }
+            }
+            AwtKeyEvent.VK_M -> {
+                // Mute toggle: store current volume, set to 0; if already 0, restore 100.
+                if (state.volume > 0) {
+                    player.setVolume(0)
+                } else {
+                    player.setVolume(100)
+                }
+            }
+        }
+    }
+
+    fun onReleased(keyCode: Int) {
+        // Reset acceleration when the seek key is released so the next press
+        // starts fresh.
+        if (keyCode == AwtKeyEvent.VK_LEFT || keyCode == AwtKeyEvent.VK_RIGHT) {
+            seekAccel = 1
+            lastSeekKey = 0
+        }
+    }
+}
+
+/**
+ * Map a Compose Multiplatform [Key] to the equivalent AWT keyCode.
+ * Returns null if the key isn't one we handle.
+ */
+private fun composeKeyToAwt(key: Key): Int? = when (key) {
+    Key.DirectionLeft -> AwtKeyEvent.VK_LEFT
+    Key.DirectionRight -> AwtKeyEvent.VK_RIGHT
+    Key.DirectionUp -> AwtKeyEvent.VK_UP
+    Key.DirectionDown -> AwtKeyEvent.VK_DOWN
+    Key.Spacebar -> AwtKeyEvent.VK_SPACE
+    Key.F -> AwtKeyEvent.VK_F
+    Key.Escape -> AwtKeyEvent.VK_ESCAPE
+    Key.P -> AwtKeyEvent.VK_P
+    Key.M -> AwtKeyEvent.VK_M
+    else -> null
+}
+
+// ============================================================================
+// Fullscreen helper — finds the parent AWT Frame and toggles its
+// MAXIMIZED_BOTH state. This works for Compose Desktop windows since the
+// Compose Window is backed by a JFrame under the hood.
+// ============================================================================
+
+private fun toggleFullscreen(component: Component, onChange: (Boolean) -> Unit) {
+    SwingUtilities.invokeLater {
+        val window = SwingUtilities.getWindowAncestor(component) ?: return@invokeLater
+        if (window is Frame) {
+            val isCurrentlyMaximized =
+                (window.extendedState and Frame.MAXIMIZED_BOTH) == Frame.MAXIMIZED_BOTH
+            window.extendedState = if (isCurrentlyMaximized) {
+                Frame.NORMAL
+            } else {
+                Frame.MAXIMIZED_BOTH
+            }
+            onChange(!isCurrentlyMaximized)
+        } else {
+            // For non-Frame windows (rare), at least try to maximize
+            window.setSize(window.toolkit.screenSize)
+            onChange(true)
+        }
+    }
+}
+
+// ============================================================================
+// Bottom control bar
+// ============================================================================
 
 @Composable
 private fun PlayerBottomBar(
@@ -306,20 +583,33 @@ private fun PlayerBottomBar(
     links: List<ExtractorLink>,
     subtitles: List<SubtitleFile>,
     currentLink: ExtractorLink?,
+    currentSource: String?,
     currentSubtitleIndex: Int,
+    isFullscreen: Boolean,
     onSeek: (Int) -> Unit,
     onPlayPause: () -> Unit,
     onVolume: (Float) -> Unit,
     onSelectLink: (ExtractorLink) -> Unit,
+    onSelectSource: (String) -> Unit,
     onSelectSubtitle: (Int) -> Unit,
     onSearchOnlineSubs: () -> Unit = {},
     onSelectAudioTrack: (Int) -> Unit = {},
     onSelectHlsVariant: (Int) -> Unit = {},
+    onToggleFullscreen: () -> Unit,
+    onOpenPicker: (PickerKind) -> Unit,
 ) {
-    var sourcesOpen by remember { mutableStateOf(false) }
-    var subsOpen by remember { mutableStateOf(false) }
-    var audioOpen by remember { mutableStateOf(false) }
-    var qualityOpen by remember { mutableStateOf(false) }
+    // Group all links by their `source` field. The Source picker shows the
+    // list of unique source names; the Quality picker shows the links within
+    // the current source, sorted by quality (best first).
+    val sourcesByQuality = remember(links) {
+        links.groupBy { it.source }
+            .mapValues { (_, list) -> list.sortedByDescending { it.quality } }
+    }
+    val uniqueSources = remember(sourcesByQuality) { sourcesByQuality.keys.toList() }
+    val linksInCurrentSource = remember(sourcesByQuality, currentSource) {
+        currentSource?.let { sourcesByQuality[it] } ?: emptyList()
+    }
+
     Column(
         Modifier
             .fillMaxWidth()
@@ -364,226 +654,385 @@ private fun PlayerBottomBar(
                 )
             }
             Spacer(Modifier.width(12.dp))
-            // Volume.
+            // Volume — allow boost up to VlcjPlayer.MAX_VOLUME (300%).
             Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Volume", tint = Color.White, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(4.dp))
             Slider(
                 value = state.volume.toFloat(),
                 onValueChange = onVolume,
-                valueRange = 0f..150f,
+                valueRange = 0f..VlcjPlayer.MAX_VOLUME.toFloat(),
                 modifier = Modifier.width(120.dp),
+            )
+            // Show the volume percent (with "boost" indicator above 100%).
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = "${state.volume}%",
+                color = if (state.volume > 100) MaterialTheme.colorScheme.primary else Color.White,
+                style = MaterialTheme.typography.labelSmall,
             )
 
             Spacer(Modifier.weight(1f))
 
-            // Source picker.
-            Box {
-                Row(
-                    Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color.White.copy(alpha = 0.1f))
-                        .clickable { sourcesOpen = true }
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = currentLink?.name ?: "Source",
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelMedium,
-                    )
-                    if (currentLink != null) {
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            text = "${currentLink.quality}p",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                        )
-                    }
-                    Icon(Icons.Filled.ArrowDropDown, contentDescription = null, tint = Color.White)
-                }
-                DropdownMenu(
-                    expanded = sourcesOpen,
-                    onDismissRequest = { sourcesOpen = false },
-                ) {
-                    links.forEach { link ->
-                        DropdownMenuItem(
-                            text = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(link.name, modifier = Modifier.weight(1f))
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(
-                                        text = "${link.quality}p",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                            },
-                            onClick = {
-                                onSelectLink(link)
-                                sourcesOpen = false
-                            },
-                        )
-                    }
-                }
+            // === Source picker — switches between providers ===
+            if (uniqueSources.isNotEmpty()) {
+                BottomBarChipButton(
+                    label = "Source",
+                    value = currentSource ?: "—",
+                    accentText = null,
+                    onClick = { onOpenPicker(PickerKind.SOURCE) },
+                )
+                Spacer(Modifier.width(8.dp))
             }
+
+            // === Quality picker — switches quality variants within the
+            // current source (e.g. 480p, 720p, 1080p) ===
+            if (linksInCurrentSource.size > 1) {
+                BottomBarChipButton(
+                    label = "Quality",
+                    value = "${currentLink?.quality ?: 0}p",
+                    accentText = null,
+                    onClick = { onOpenPicker(PickerKind.QUALITY) },
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+
+            // === Subtitle picker ===
+            BottomBarChipButton(
+                label = "Subtitles",
+                value = if (currentSubtitleIndex in subtitles.indices) {
+                    subtitles[currentSubtitleIndex].lang
+                } else "Off",
+                icon = Icons.Filled.Subtitles,
+                onClick = { onOpenPicker(PickerKind.SUBTITLE) },
+            )
             Spacer(Modifier.width(8.dp))
-            // Subtitle picker.
-            Box {
+
+            // === Audio track picker (multi-language streams) ===
+            if (state.audioTracks.size > 1) {
+                BottomBarChipButton(
+                    label = "Audio",
+                    value = state.audioTracks.getOrNull(state.currentAudioTrackIndex)?.description
+                        ?: "—",
+                    icon = Icons.Filled.AudioFile,
+                    onClick = { onOpenPicker(PickerKind.AUDIO) },
+                    maxWidth = 110.dp,
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+
+            // === HLS stream quality variant picker (within one .m3u8 link) ===
+            if (state.hlsVariants.size > 1) {
+                BottomBarChipButton(
+                    label = "Quality",
+                    value = state.hlsVariants.getOrNull(state.currentHlsVariantIndex)?.resolution
+                        ?: "Auto",
+                    icon = Icons.Filled.HighQuality,
+                    onClick = { onOpenPicker(PickerKind.HLS_VARIANT) },
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+
+            // === Fullscreen toggle ===
+            IconButton(onClick = onToggleFullscreen) {
+                Icon(
+                    if (isFullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen,
+                    contentDescription = if (isFullscreen) "Exit fullscreen" else "Fullscreen",
+                    tint = Color.White,
+                )
+            }
+        }
+    }
+}
+
+/** A small pill-style button used in the bottom control bar — opens a picker
+ *  dialog when clicked. */
+@Composable
+private fun BottomBarChipButton(
+    label: String,
+    value: String,
+    accentText: String? = null,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    maxWidth: androidx.compose.ui.unit.Dp = 160.dp,
+    onClick: () -> Unit,
+) {
+    Row(
+        Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.White.copy(alpha = 0.1f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .widthIn(max = maxWidth),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (icon != null) {
+            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+        }
+        Column {
+            Text(
+                text = label,
+                color = Color.White.copy(alpha = 0.6f),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+            )
+            Text(
+                text = value,
+                color = Color.White,
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (accentText != null) {
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = accentText,
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+            )
+        }
+        Spacer(Modifier.width(4.dp))
+        Icon(Icons.Filled.ArrowDropDown, contentDescription = null, tint = Color.White)
+    }
+}
+
+// ============================================================================
+// Picker dialogs — rendered as Compose Dialog windows so they appear ABOVE
+// the SwingPanel video surface.
+// ============================================================================
+
+@Composable
+private fun PickerDialogContainer(
+    kind: PickerKind,
+    links: List<ExtractorLink>,
+    subtitles: List<SubtitleFile>,
+    state: VlcjPlayer.PlayerState,
+    currentLink: ExtractorLink?,
+    currentSource: String?,
+    currentSubtitleIndex: Int,
+    onSelectSource: (String) -> Unit,
+    onSelectLink: (ExtractorLink) -> Unit,
+    onSelectSubtitle: (Int) -> Unit,
+    onSelectAudioTrack: (Int) -> Unit,
+    onSelectHlsVariant: (Int) -> Unit,
+    onSearchOnlineSubs: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    when (kind) {
+        PickerKind.SOURCE -> {
+            val sources = remember(links) {
+                links.groupBy { it.source }
+                    .mapValues { (_, list) -> list.sortedByDescending { it.quality } }
+            }
+            PickerDialog(
+                title = "Source",
+                subtitle = "${sources.size} providers",
+                onDismiss = onDismiss,
+            ) {
+                sources.keys.forEach { source ->
+                    val best = sources[source]?.firstOrNull()
+                    PickerRow(
+                        title = source,
+                        subtitle = best?.let { "${it.quality}p" },
+                        isSelected = source == currentSource,
+                        onClick = { onSelectSource(source) },
+                    )
+                }
+            }
+        }
+
+        PickerKind.QUALITY -> {
+            val sourceLinks = remember(links, currentSource) {
+                links.filter { it.source == currentSource }
+                    .sortedByDescending { it.quality }
+            }
+            PickerDialog(
+                title = "Quality",
+                subtitle = currentSource ?: "—",
+                onDismiss = onDismiss,
+            ) {
+                sourceLinks.forEach { link ->
+                    PickerRow(
+                        title = "${link.quality}p",
+                        subtitle = link.name.takeIf { it.isNotBlank() },
+                        isSelected = link.url == currentLink?.url,
+                        onClick = { onSelectLink(link) },
+                    )
+                }
+            }
+        }
+
+        PickerKind.SUBTITLE -> {
+            PickerDialog(
+                title = "Subtitles",
+                subtitle = "${subtitles.size} available",
+                onDismiss = onDismiss,
+            ) {
+                PickerRow(
+                    title = "Off",
+                    subtitle = null,
+                    isSelected = currentSubtitleIndex == -1,
+                    onClick = { onSelectSubtitle(-1) },
+                )
+                subtitles.forEachIndexed { i, sub ->
+                    PickerRow(
+                        title = sub.lang,
+                        subtitle = null,
+                        isSelected = i == currentSubtitleIndex,
+                        onClick = { onSelectSubtitle(i) },
+                    )
+                }
+                PickerRow(
+                    title = "Search OpenSubtitles…",
+                    subtitle = null,
+                    icon = Icons.Filled.Search,
+                    accent = true,
+                    isSelected = false,
+                    onClick = onSearchOnlineSubs,
+                )
+            }
+        }
+
+        PickerKind.AUDIO -> {
+            PickerDialog(
+                title = "Audio Track",
+                subtitle = "${state.audioTracks.size} tracks",
+                onDismiss = onDismiss,
+            ) {
+                state.audioTracks.forEach { track ->
+                    PickerRow(
+                        title = track.description,
+                        subtitle = null,
+                        isSelected = track.index == state.currentAudioTrackIndex,
+                        onClick = { onSelectAudioTrack(track.index) },
+                    )
+                }
+            }
+        }
+
+        PickerKind.HLS_VARIANT -> {
+            PickerDialog(
+                title = "Stream Quality",
+                subtitle = "${state.hlsVariants.size} variants",
+                onDismiss = onDismiss,
+            ) {
+                state.hlsVariants.forEach { variant ->
+                    PickerRow(
+                        title = variant.resolution,
+                        subtitle = null,
+                        isSelected = variant.index == state.currentHlsVariantIndex,
+                        onClick = { onSelectHlsVariant(variant.index) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PickerDialog(
+    title: String,
+    subtitle: String? = null,
+    onDismiss: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true,
+            usePlatformDefaultWidth = false,
+        ),
+    ) {
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+            modifier = Modifier
+                .widthIn(min = 280.dp, max = 380.dp)
+                .heightIn(max = 540.dp),
+        ) {
+            Column {
+                // Header
                 Row(
                     Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color.White.copy(alpha = 0.1f))
-                        .clickable { subsOpen = true }
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Filled.Subtitles, contentDescription = "Subtitles", tint = Color.White, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = if (currentSubtitleIndex >= 0 && currentSubtitleIndex < subtitles.size) {
-                            subtitles[currentSubtitleIndex].lang
-                        } else "Off",
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelMedium,
-                    )
-                    Icon(Icons.Filled.ArrowDropDown, contentDescription = null, tint = Color.White)
-                }
-                DropdownMenu(
-                    expanded = subsOpen,
-                    onDismissRequest = { subsOpen = false },
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Off") },
-                        onClick = {
-                            onSelectSubtitle(-1)
-                            subsOpen = false
-                        },
-                    )
-                    subtitles.forEachIndexed { i, sub ->
-                        DropdownMenuItem(
-                            text = { Text(sub.lang) },
-                            onClick = {
-                                onSelectSubtitle(i)
-                                subsOpen = false
-                            },
-                        )
-                    }
-                    // Search OpenSubtitles online
-                    DropdownMenuItem(
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    Icons.Filled.Search,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text("Search OpenSubtitles…", color = MaterialTheme.colorScheme.primary)
-                            }
-                        },
-                        onClick = {
-                            onSearchOnlineSubs()
-                            subsOpen = false
-                        },
-                    )
-                }
-            }
-
-            // Audio track picker (for multi-language streams)
-            if (state.audioTracks.size > 1) {
-                Spacer(Modifier.width(8.dp))
-                Box {
-                    Row(
-                        Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.White.copy(alpha = 0.1f))
-                            .clickable { audioOpen = true }
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(Icons.Filled.AudioFile, contentDescription = "Audio", tint = Color.White, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
+                    Column(Modifier.weight(1f)) {
                         Text(
-                            text = state.audioTracks.getOrNull(state.currentAudioTrackIndex)?.description ?: "Audio",
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelMedium,
-                            maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                            modifier = Modifier.widthIn(max = 80.dp),
+                            text = title,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
-                        Icon(Icons.Filled.ArrowDropDown, contentDescription = null, tint = Color.White)
-                    }
-                    DropdownMenu(
-                        expanded = audioOpen,
-                        onDismissRequest = { audioOpen = false },
-                    ) {
-                        state.audioTracks.forEach { track ->
-                            DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(track.description, modifier = Modifier.weight(1f))
-                                        if (track.index == state.currentAudioTrackIndex) {
-                                            Spacer(Modifier.width(8.dp))
-                                            Text("✓", color = MaterialTheme.colorScheme.primary)
-                                        }
-                                    }
-                                },
-                                onClick = {
-                                    onSelectAudioTrack(track.index)
-                                    audioOpen = false
-                                },
+                        if (subtitle != null) {
+                            Text(
+                                text = subtitle,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Filled.Close, contentDescription = "Close", modifier = Modifier.size(20.dp))
+                    }
                 }
+                // Body — scrollable list of options
+                Column(
+                    Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = 8.dp),
+                    content = content,
+                )
             }
+        }
+    }
+}
 
-            // HLS quality variant picker
-            if (state.hlsVariants.size > 1) {
-                Spacer(Modifier.width(8.dp))
-                Box {
-                    Row(
-                        Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.White.copy(alpha = 0.1f))
-                            .clickable { qualityOpen = true }
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(Icons.Filled.HighQuality, contentDescription = "Quality", tint = Color.White, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            text = state.hlsVariants.getOrNull(state.currentHlsVariantIndex)?.resolution ?: "Auto",
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                        Icon(Icons.Filled.ArrowDropDown, contentDescription = null, tint = Color.White)
-                    }
-                    DropdownMenu(
-                        expanded = qualityOpen,
-                        onDismissRequest = { qualityOpen = false },
-                    ) {
-                        state.hlsVariants.forEach { variant ->
-                            DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(variant.resolution, modifier = Modifier.weight(1f))
-                                        if (variant.index == state.currentHlsVariantIndex) {
-                                            Spacer(Modifier.width(8.dp))
-                                            Text("✓", color = MaterialTheme.colorScheme.primary)
-                                        }
-                                    }
-                                },
-                                onClick = {
-                                    onSelectHlsVariant(variant.index)
-                                    qualityOpen = false
-                                },
-                            )
-                        }
-                    }
-                }
+@Composable
+private fun PickerRow(
+    title: String,
+    subtitle: String?,
+    isSelected: Boolean,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    accent: Boolean = false,
+    onClick: () -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (icon != null) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = if (accent) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(10.dp))
+        }
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (accent) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurface,
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
+        }
+        if (isSelected) {
+            Spacer(Modifier.width(8.dp))
+            Text("✓", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleMedium)
         }
     }
 }
