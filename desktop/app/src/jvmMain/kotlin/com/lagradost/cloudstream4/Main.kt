@@ -138,18 +138,7 @@ fun main() = application {
                     contentColor = MaterialTheme.colorScheme.onBackground,
                 ) { padding ->
                     Box(Modifier.fillMaxSize().padding(padding)) {
-                        try {
-                            AppShell(pluginManager, repoManager, settings, dataStore)
-                        } catch (e: Exception) {
-                            log.error("UI error", e)
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Something went wrong", style = MaterialTheme.typography.titleLarge)
-                                    Spacer(Modifier.height(8.dp))
-                                    Text(e.message ?: "Unknown error", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                        }
+                        AppShell(pluginManager, repoManager, settings, dataStore)
 
                         // App update notification (top-right corner)
                         appUpdateInfo?.let { info ->
