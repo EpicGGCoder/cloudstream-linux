@@ -23,7 +23,7 @@ import java.io.File
  * Persistence: a JSON file at `dataDir/plugins.json` records the list of
  * installed plugin file paths + their source URLs.
  */
-class PluginManager(private val dataDir: File) {
+class PluginManager(val dataDir: File) {
     private val log = LoggerFactory.getLogger(PluginManager::class.java)
     private val json = Json { ignoreUnknownKeys = true; prettyPrint = true }
 

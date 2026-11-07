@@ -150,6 +150,132 @@ class RepositoryManager(
     }
 
     // ------------------------------------------------------------------
+    // Plugin auto-update — checks installed plugins for newer versions
+    // ------------------------------------------------------------------
+
+    /**
+     * Check all installed plugins for updates from their source repos.
+     * If a newer version is found, download and update it automatically.
+     *
+     * Called on app startup. Mirrors CS3's auto-update behavior:
+     * "if I have added castletv and it was updated, it will get updated
+     *  in the app whenever I reopen it."
+     *
+     * @param onProgress callback for each plugin being checked/updated
+     * @return number of plugins updated
+     */
+    suspend fun checkAndAutoUpdatePlugins(
+        onProgress: (pluginName: String, status: String) -> Unit = { _, _ -> }
+    ): Int = withContext(Dispatchers.IO) {
+        val installed = pluginManager.installed.value
+        if (installed.isEmpty()) return@withContext 0
+
+        var updatedCount = 0
+
+        for (plugin in installed) {
+            val sourceUrl = plugin.sourceUrl ?: continue
+            onProgress(plugin.displayName, "Checking…")
+
+            try {
+                // The sourceUrl is the .cs3 file URL.
+                // We need to find the repo.json that listed this plugin to get
+                // the latest version info. But we don't store the repo URL.
+                //
+                // Alternative approach: just re-download the .cs3 from sourceUrl
+                // and check if the file size/hash changed. This is simpler and
+                // doesn't require storing the repo URL.
+                //
+                // CS3 stores the repo URL in its REPOSITORIES_KEY. We should do the same.
+                // For now, we use the simpler approach: HEAD the source URL and compare
+                // content-length with the current file size.
+
+                val headReq = okhttp3.Request.Builder()
+                    .url(sourceUrl)
+                    .header("User-Agent", USER_AGENT)
+                    .head()
+                    .build()
+
+                var remoteSize: Long? = null
+                client.newCall(headReq).execute().use { resp ->
+                    remoteSize = resp.header("Content-Length")?.toLongOrNull()
+                }
+
+                val currentFile = File(plugin.filePath)
+                val currentSize = if (currentFile.exists()) currentFile.length() else -1
+
+                if (remoteSize != null && remoteSize != currentSize) {
+                    onProgress(plugin.displayName, "Updating…")
+                    log.info("Plugin ${plugin.displayName}: local=${currentSize}B remote=${remoteSize}B — updating")
+
+                    // Re-download
+                    val bytes = getBytes(sourceUrl)
+                    currentFile.writeBytes(bytes)
+
+                    // Re-install
+                    pluginManager.install(currentFile, sourceUrl, isOnline = true)
+                    updatedCount++
+                    onProgress(plugin.displayName, "Updated")
+                } else {
+                    onProgress(plugin.displayName, "Up to date")
+                }
+            } catch (e: Exception) {
+                log.debug("Auto-update check failed for ${plugin.displayName}: ${e.message}")
+                onProgress(plugin.displayName, "Check failed")
+            }
+        }
+
+        log.info("Auto-update: $updatedCount/${installed.size} plugins updated")
+        updatedCount
+    }
+
+    // ------------------------------------------------------------------
+    // Repo storage — track which repos the user has added
+    // ------------------------------------------------------------------
+
+    private val reposFile = File(pluginManager.dataDir, "repos.json")
+
+    @Serializable
+    data class StoredRepo(
+        val url: String,
+        val name: String? = null,
+        val addedAt: Long = System.currentTimeMillis(),
+    )
+
+    @Serializable
+    private data class RepoStore(val repos: List<StoredRepo> = emptyList())
+
+    /**
+     * Save a repo URL so we can check for updates later.
+     */
+    fun saveRepo(url: String, name: String?) {
+        try {
+            val store = if (reposFile.exists()) {
+                json.decodeFromString(RepoStore.serializer(), reposFile.readText())
+            } else RepoStore()
+            val exists = store.repos.any { it.url == url }
+            if (!exists) {
+                val newStore = RepoStore(store.repos + StoredRepo(url, name))
+                reposFile.writeText(json.encodeToString(RepoStore.serializer(), newStore))
+            }
+        } catch (e: Exception) {
+            log.debug("Failed to save repo: ${e.message}")
+        }
+    }
+
+    /**
+     * Get all stored repo URLs.
+     */
+    fun getStoredRepos(): List<StoredRepo> {
+        return try {
+            if (reposFile.exists()) {
+                json.decodeFromString(RepoStore.serializer(), reposFile.readText()).repos
+            } else emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    // ------------------------------------------------------------------
     // HTTP helpers — thin wrapper over okhttp
     // ------------------------------------------------------------------
 
