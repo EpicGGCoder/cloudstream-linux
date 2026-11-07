@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AudioFile
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -181,31 +182,14 @@ fun PlayerScreen(
     }
 
     Surface(color = Color.Black, modifier = Modifier.fillMaxSize()) {
-        Box(Modifier.fillMaxSize()) {
-            // vlcj video surface (AWT → Compose bridge). The EmbeddedMediaPlayerComponent
-            // is itself a JPanel that owns the video canvas — return it directly.
-            if (loadState == LoadState.PLAYING || loadState == LoadState.LOADING) {
-                SwingPanel(
-                    factory = { player.surface },
-                    modifier = Modifier.fillMaxSize(),
-                    update = { /* no-op */ },
-                )
-            }
-
-            // Controls are ALWAYS visible (no auto-hide) — desktop users expect persistent controls
-            // Title bar — always visible with close button
+        // Use Column layout — SwingPanel renders ON TOP of Compose content,
+        // so we MUST put controls in separate areas NOT covered by the video.
+        Column(Modifier.fillMaxSize()) {
+            // === TOP BAR — title + close button (not behind video) ===
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .align(Alignment.TopCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.Black.copy(alpha = 0.85f),
-                                Color.Transparent,
-                            ),
-                        ),
-                    )
+                    .background(Color(0xFF111111))
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -220,78 +204,97 @@ fun PlayerScreen(
                     text = title,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = Color.White,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                 )
             }
 
-            // Bottom controls — always visible, positioned at bottom
-            Box(Modifier.align(Alignment.BottomCenter)) {
-                PlayerBottomBar(
-                    state = playerState,
-                    links = links,
-                    subtitles = subtitles,
-                    currentLink = currentLink,
-                    currentSubtitleIndex = currentSubtitleIndex,
-                    onSeek = { player.seekTo(it.toLong()) },
-                    onPlayPause = {
-                        if (playerState.isPlaying) player.pause() else player.play()
-                    },
-                    onVolume = { player.setVolume(it.toInt()) },
-                    onSelectLink = { link ->
-                        currentLink = link
-                        player.load(link, title, subtitles)
-                    },
-                    onSelectSubtitle = { idx ->
-                        currentSubtitleIndex = idx
-                        player.selectSubtitle(idx)
-                    },
-                    onSearchOnlineSubs = {
-                        scope.launch {
-                            val api = OpenSubtitlesApi()
-                            val results = api.search(title)
-                            if (results.isNotEmpty()) {
-                                subtitles = (subtitles + results).distinctBy { it.url }
-                            }
-                        }
-                    },
-                    onSelectAudioTrack = { idx -> player.selectAudioTrack(idx) },
-                    onSelectHlsVariant = { idx -> player.selectHlsVariant(idx) },
-                )
-            }
+            // === VIDEO AREA — fills available space ===
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .background(Color.Black),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (loadState == LoadState.PLAYING || loadState == LoadState.LOADING) {
+                    SwingPanel(
+                        factory = { player.surface },
+                        modifier = Modifier.fillMaxSize(),
+                        update = { /* no-op */ },
+                    )
+                }
 
-            // Loading overlay (during initial load or buffering).
-            if (loadState == LoadState.LOADING || (playerState.isLoading && loadState == LoadState.PLAYING)) {
-                Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
+                // Loading overlay — shows on top of video area
+                if (loadState == LoadState.LOADING || (playerState.isLoading && loadState == LoadState.PLAYING)) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = if (loadState == LoadState.LOADING) "Loading sources…"
-                            else "Buffering…",
+                            text = if (loadState == LoadState.LOADING) "Loading sources…" else "Buffering…",
                             color = Color.White,
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                 }
+
+                // Error state
+                if (loadState == LoadState.ERROR) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Filled.Error, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
+                        Spacer(Modifier.height(8.dp))
+                        Text("Playback failed", color = Color.White, style = MaterialTheme.typography.titleMedium)
+                        Text(errorMsg ?: "Unknown error", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall)
+                        Spacer(Modifier.height(16.dp))
+                        Button(onClick = onClose) { Text("Close") }
+                    }
+                }
+
+                // No sources
+                if (loadState == LoadState.NO_SOURCES) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("No playable sources", color = Color.White, style = MaterialTheme.typography.titleMedium)
+                        Spacer(Modifier.height(8.dp))
+                        Text("Try another provider or episode.", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall)
+                        Spacer(Modifier.height(16.dp))
+                        Button(onClick = onClose) { Text("Close") }
+                    }
+                }
             }
 
-            // Error / no-sources state.
-            if (loadState == LoadState.ERROR) {
-                ErrorState(
-                    title = "Playback failed",
-                    body = errorMsg ?: "Unknown error.",
-                    onRetry = { loadState = LoadState.LOADING; /* trigger re-launch */ scope.launch { /* no-op */ } },
-                )
-            }
-            if (loadState == LoadState.NO_SOURCES) {
-                EmptyState(
-                    title = "No playable sources",
-                    body = "This provider returned metadata but no direct stream links. " +
-                        "Try another provider or episode.",
-                )
-            }
+            // === BOTTOM CONTROLS — always visible, NOT behind video ===
+            PlayerBottomBar(
+                state = playerState,
+                links = links,
+                subtitles = subtitles,
+                currentLink = currentLink,
+                currentSubtitleIndex = currentSubtitleIndex,
+                onSeek = { player.seekTo(it.toLong()) },
+                onPlayPause = {
+                    if (playerState.isPlaying) player.pause() else player.play()
+                },
+                onVolume = { player.setVolume(it.toInt()) },
+                onSelectLink = { link ->
+                    currentLink = link
+                    player.load(link, title, subtitles)
+                },
+                onSelectSubtitle = { idx ->
+                    currentSubtitleIndex = idx
+                    player.selectSubtitle(idx)
+                },
+                onSearchOnlineSubs = {
+                    scope.launch {
+                        val api = OpenSubtitlesApi()
+                        val results = api.search(title)
+                        if (results.isNotEmpty()) {
+                            subtitles = (subtitles + results).distinctBy { it.url }
+                        }
+                    }
+                },
+                onSelectAudioTrack = { idx -> player.selectAudioTrack(idx) },
+                onSelectHlsVariant = { idx -> player.selectHlsVariant(idx) },
+            )
         }
     }
 }
